@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find the Different item</title>
+<link href="style.css" rel="stylesheet">
+</head>
+<body style= "background: transparent;">
+
+
+<div style="display: flex !important; padding: 20px; background: transparent;"class="page" id="page4">
+ <h1>🎯 Find the Different item</h1>
+
+  <div class="score-info" id="scoreInfo">
+     <div> 🏆High Score: <span id="highScoreText">0</span></div> |
+    <div>Score: <span id="score">0</span></div>
+  </div>
+
+  <div class="timer-container" id="timerContainer">
+    <div class="timer-bar-bg">
+      <div id="timerBar" class="timer-bar-fill"></div>
+      <div class="timer-seconds" id="timerSeconds">60s</div>
+    </div>
+  </div>
+
+  <div id="gameContainer">
+    <div id="grid"></div>
+  </div>
+
+  <button id="retry" onclick="resetGame()">🔄</button>
+       <div class="retry-left"id="retryLeft"></div>
+
+</div>
+  <div class="overlay" id="overlay"></div>
+</div>
+
+  
+  </div>
+
+  <!-- Game Over Popup -->
+  <div id="gameOverPopup" class="hidden">
+    <h2>Game Over 😢</h2>
+    <p>Your Score: <span id="finalScore">0</span></p>
+    <p>High Score: <span id="finalHighScore">0</span></p>
+    <button onclick="resetGame()">Play Again</button>
+      <div class="retry-left"style="color: grey !important;" id="retryLeft"></div>
+  </div>
+
+
+  <!-- Tutorial Popup -->
+
+  <div style="width:300px;" id="tutorialPopup">
+     <h3>Tutorial</h3>
+  <p>Welcome to <strong>Find the Different Item 🎯</strong>!</p>
+  <p>1- Click the one item that is different from the others.You have 60 seconds. </p>
+  <p>2- If you click the wrong item, you lose .</p>
+  <p>3- Sometimes <strong style="color: #ff69b4;">Boby</strong> appears (<span style="color: #ff69b4;">Bonus round +10 points</span>).</p>
+
+
+  <p>Good luck, and have fun! 🎉</p>
+    <button style= "background: #CD923B;" onclick="startGame()">▶️ Play</button>
+  </div>
+
+  <script>
+    const folder = '3/';
+const emojiPairs = [];
+for (let i = 1; i <= 52; i += 2) {
+  emojiPairs.push([`${folder}${i}.png`, `${folder}${i + 1}.png`]);
+}
+
+    const grid = document.getElementById('grid');
+    const timerBar = document.getElementById("timerBar");
+    const timerSeconds = document.getElementById("timerSeconds");
+    const scoreEl = document.getElementById("score");
+    const highScoreText = document.getElementById("highScoreText");
+    const finalScore = document.getElementById("finalScore");
+    const finalHighScore = document.getElementById("finalHighScore");
+
+    const tutorialPopup = document.getElementById("tutorialPopup");
+    const gameOverPopup = document.getElementById("gameOverPopup");
+
+    const gameContainer = document.getElementById("gameContainer");
+    const retryBtn = document.getElementById("retryBtn");
+    const navButtons = document.getElementById("navButtons");
+    const timerContainer = document.getElementById("timerContainer");
+    const scoreInfo = document.getElementById("scoreInfo");
+
+
+    let timer, timeLeft = 60, score = 0;
+    let gameStarted = false;
+let retries = 0;
+const maxRetries = 3;
+
+// ✅ Reset Game (Retry buttons, consumes retry)
+function resetGame() {
+  if (retries >= maxRetries) {
+    alert("No retries left!");
+document.getElementById('gameOverPopup').classList.add('hidden');
+document.getElementById('overlay').classList.add('hidden');
+    return;
+  }
+  retries++;
+  updateRetryLeft();
+document.getElementById('gameOverPopup').classList.add('hidden');
+  startGame();
+}
+
+const retryLeftEls = document.getElementsByClassName('retry-left');
+
+function updateRetryLeft() {
+  Array.from(retryLeftEls).forEach(el => {
+    el.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
+  });
+}
+
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function getRandomPair() {
+      shuffleArray(emojiPairs);
+      return emojiPairs[Math.floor(Math.random() * emojiPairs.length)];
+    }
+
+    function showPopup(id) {
+      document.getElementById(id).classList.remove("hidden");
+      document.getElementById('overlay').classList.remove('hidden');
+    }
+
+    function hidePopup(id) {
+      document.getElementById(id).classList.add("hidden");
+      document.getElementById('overlay').classList.add('hidden');
+    }
+
+    function startGame() {
+      hidePopup("tutorialPopup");
+      score = 0;
+      timeLeft = 60;
+      scoreEl.textContent = score;
+      updateTimerBar();
+      generateGrid();
+      gameStarted = true;
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerBar();
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function updateTimerBar() {
+      const percent = Math.max(0, (timeLeft / 60) * 100);
+      timerBar.style.width = percent + "%";
+      timerSeconds.textContent = `${timeLeft}s`;
+    }
+
+    function generateGrid() {
+  grid.innerHTML = '';
+
+  // Decide if this round is a bonus round (20% chance)
+  const isBonusRound = Math.random() < 0.10;
+
+  const [face1, face2] = getRandomPair();
+  const isFace1Base = Math.random() < 0.5;
+  const baseFace = isFace1Base ? face1 : face2;
+  const diffFace = isFace1Base ? face2 : face1;
+
+  // Create 16 positions and shuffle them
+  const positions = Array.from({ length: 16 }, (_, i) => i);
+  shuffleArray(positions);
+
+  let diffIndex = positions[0]; // default different face index
+  let bonusPositions = [];
+  let correctBonusIndex;
+
+  if (isBonusRound) {
+    // Bonus round logic
+    diffIndex = -1; // no normal different face
+
+    // Pick 2 bonus positions
+    while (bonusPositions.length < 2) {
+      const pos = positions[Math.floor(Math.random() * positions.length)];
+      if (!bonusPositions.includes(pos)) bonusPositions.push(pos);
+    }
+
+    // Randomly choose which bonus is correct
+    correctBonusIndex = bonusPositions[Math.floor(Math.random() * 2)];
+  }
+
+  for (let i = 0; i < 16; i++) {
+    const div = document.createElement('div');
+    div.className = 'face';
+
+    if (isBonusRound) {
+      if (bonusPositions.includes(i)) {
+        // Bonus icons
+        div.innerHTML = `<img src="${i === correctBonusIndex ? '3/bonus1.png' : '3/bonus2.png'}" alt="bonus">`;
+        if (i === correctBonusIndex) {
+          div.onclick = () => {
+            if (!gameStarted) return;
+            score += 10; // bonus points
+            scoreEl.textContent = score;
+            div.remove();
+            generateGrid(); // continue next round
+          };
+        } else {
+          div.onclick = () => {
+            if (!gameStarted) return;
+            endGame(); // wrong bonus ends game
+          };
+        }
+      } else {
+        // All other icons are wrong
+        div.innerHTML = `<img src="3/bonus2.png" alt="wrong">`;
+        div.onclick = () => {
+          if (!gameStarted) return;
+          endGame(); // clicking wrong ends game
+        };
+      }
+    } else {
+      // Normal round
+      div.innerHTML = `<img src="${i === diffIndex ? diffFace : baseFace}" alt="face">`;
+      div.onclick = () => {
+        if (!gameStarted) return;
+        if (i === diffIndex) {
+          score++;
+          scoreEl.textContent = score;
+          generateGrid(); // next round
+        } else {
+          endGame();
+        }
+      };
+    }
+
+    grid.appendChild(div);
+  }
+}
+
+
+
+
+
+    function endGame() {
+      gameStarted = false;
+      clearInterval(timer);
+      finalScore.textContent = score;
+      let best = localStorage.getItem("findDiffHighScore") || 0;
+      if (score > best) {
+        localStorage.setItem("findDiffHighScore", score);
+        best = score;
+      }
+      finalHighScore.textContent = best;
+
+  // Identify the game (1,2,3)
+  window.parent.postMessage({ 
+    type: "highscore", 
+    game: 3,  // ← change per child (1, 2, 3)
+    highscore: best 
+  }, "*");
+      showPopup("gameOverPopup");
+    }
+
+window.onload=()=>{ 
+  document.getElementById("tutorialPopup").style.display="block";
+ 
+generateGrid();
+    updateRetryLeft();
+};
+
+highScoreText.textContent = localStorage.getItem("findDiffHighScore") || 0;
+    showPopup("tutorialPopup");
+
+  </script>
+</body>
+</html>
