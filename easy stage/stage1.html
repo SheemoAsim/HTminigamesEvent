@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Harvest Town - Mini Games</title>
+<link href="style.css" rel="stylesheet">
+</head>
+<body>
+<div id="timer-overlay" style="left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.5); color: white; padding: 5px; text-align: center; font-size: 12px; z-index: 1000;">
+  This stage will be closed down in <span id="endcountdown"></span>
+</div>
+<div style="padding: 20px;"class="page active" id="page1">
+  <img src="HTMG.png" alt="Harvest Town Logo " class="logo" />
+  <h2>1st Stage</h2>
+  <h3>EASY</h3>
+  <input type="text" id="ign" placeholder="Enter IGN" />
+  <input type="number" id="id" placeholder="Enter ID" />
+  <button onclick="goToPage2()">Start</button>
+  <div class="page-overlay hidden" id="pageOverlay1"></div>
+</div>
+
+<!-- PAGE 2 (Game 1 iframe) -->
+<div class="page" id="page2">
+  <iframe style="display: flex !important;height: 750px;"src="game1.html" class="game-frame"></iframe>
+  <div class="bottom-buttons">
+      <button onclick="goToPage(1)">⬅ Back</button>
+      <button onclick="goToPage(3)">Next ➡</button>
+  </div>
+</div>
+
+<!-- PAGE 3 (Game 2 iframe) -->
+<div class="page" id="page3">
+    <iframe style="display: flex !important;height: 600px;"src="game2.html" class="game-frame"></iframe>
+  <div class="bottom-buttons">
+      <button onclick="goToPage(2)">⬅ Back</button>
+      <button onclick="goToPage(4)">Next ➡</button>
+  </div>
+</div>
+
+<!-- PAGE 4 (Game 3 iframe) -->
+<div class="page" id="page4">
+  <iframe style="display: flex !important;height: 630px;" src="game3.html" class="game-frame"></iframe>
+  <div class="bottom-buttons">
+      <button onclick="goToPage(3)">⬅ Back</button>
+  </div>
+<button id="submit-button" class="submit-button" onclick="submitResults()">Submit</button>
+<p class="reminder" id="reminder-text">
+  Don’t FORGET to submit your participation or you’ll lose your progress
+</p>
+</div>
+
+
+<script>
+
+/* ---------- Global Countdown ---------- */
+const deadline = new Date('2025-09-14T23:59:59');
+window.onload = () => setInterval(countdown, 1000);
+
+function countdown() {
+    const currentTime = new Date();
+    const timeRemaining = deadline - currentTime;
+    const el = document.getElementById('endcountdown');
+    if (!el) return;
+
+    if (timeRemaining <= 0) {
+        // ✅ Only trigger once
+        if (!window.stageEnded) {
+            window.stageEnded = true;
+
+            // Show alert with your message
+            alert("Sorry, the time for this stage has ended. Better luck next time!");
+
+            // Close page visually: blank/black
+            document.body.innerHTML = "";                // remove all page content
+            document.body.style.backgroundColor = "black"; // set black background
+        }
+        return;
+    }
+
+    const days = Math.floor(timeRemaining / (1000*60*60*24));
+    const hours = Math.floor((timeRemaining % (1000*60*60*24))/(1000*60*60));
+    const minutes = Math.floor((timeRemaining % (1000*60*60))/(1000*60));
+    const seconds = Math.floor((timeRemaining % (1000*60))/1000);
+    el.textContent = `${days}D ${hours}Hr ${minutes}m ${seconds}s`;
+}
+
+
+/* ---------- Global Variables ---------- */
+let scores = { 1: 0, 2: 0, 3: 0 };   // results for the 3 games in this stage
+let currentStage = 1;                // 🔹 change to 2 or 3 for other stages
+
+
+/* ---------- Navigation ---------- */
+function goToPage2(){
+    const ign = document.getElementById('ign').value.trim();
+    const id = document.getElementById('id').value.trim();
+    if(!ign || !id){ alert("Please fill all fields"); return; }
+    goToPage(2);
+}
+
+function goToPage(n){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    const pageEl = document.getElementById('page'+n);
+    if(pageEl) pageEl.classList.add('active');
+    scrollToTop();
+}
+
+function scrollToTop(){
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
+/* ---------- Submit Results ---------- */
+
+// Listen for messages from child games
+window.addEventListener("message", (event) => {
+  if (event.data.type === "highscore") {
+    scores[event.data.game] = event.data.highscore;
+    console.log("Updated scores:", scores);
+  }
+});
+
+
+function submitResults() {
+  const confirmed = confirm("Are you sure you're done?");
+  if (!confirmed) return;
+
+if (!navigator.onLine) {
+    alert("Can't save result! Check your internet connection!");
+    return; // stop here, like cancel
+  }
+
+  const ign = document.getElementById('ign').value.trim();
+  const id = document.getElementById('id').value.trim();
+
+  // ✅ Show results in alert
+  alert(
+    `IGN: ${ign}\nID: ${id}\nStage: ${currentStage}\n\n` +
+    `G1: ${scores[1]}\n` +
+    `G2: ${scores[2]}\n` +
+    `G3: ${scores[3]}`
+  );
+
+  const submitBtn = document.getElementById("submit-button");
+  submitBtn.classList.add("done");
+  submitBtn.innerHTML = "Done!";
+  submitBtn.disabled = true;
+
+   const reminder = document.getElementById("reminder-text");
+  reminder.innerHTML = `Thanks for participating, ${ign}! 🎉<br><span id="ranking-link" style="color:#4dabf7; cursor:pointer;">See Leaderboard</span>`;
+  reminder.style.color = "white";
+
+  const g1 = scores[1] || 0;  
+  const g2 = scores[2] || 0;   
+  const g3 = scores[3] || 0;  
+
+  finishStage(currentStage, g1, g2, g3);
+
+  // ✅ Add click event to ranking text
+  setTimeout(() => {
+    const rankingLink = document.getElementById("ranking-link");
+    if (rankingLink) {
+      rankingLink.addEventListener("click", () => {
+window.location.href = "HT minigames Results.html";
+
+      });
+    }
+  }, 200);
+
+  
+     
+
+
+}
+
+function finishStage(stageNumber, g1, g2, g3) {
+  const ign = document.getElementById("ign").value.trim();
+  const id = document.getElementById("id").value.trim();
+
+  let players = JSON.parse(localStorage.getItem("players")) || {};
+
+  if (!players[ign]) {
+    players[ign] = { ign, id, stages: {}, final:{} };
+  }
+
+ 
+players[ign].stages[stageNumber] = { 
+    raw:{ g1, g2, g3 }, 
+    submittedAt: Date.now() 
+  };
+
+  localStorage.setItem("players", JSON.stringify(players));
+
+  // Store last stage for results.html
+  localStorage.setItem("latestStageResult", JSON.stringify({
+    ign, id, stageNumber, g1, g2, g3
+  }));
+
+  console.log("✅ Stage saved:", players[ign]);
+}
+
+
+
+
+
+/* ---------- Utility: Score Increment ---------- */
+function addScore(gameNum, points){
+    scores[gameNum] += points;
+    const scoreEl = document.getElementById("score"+gameNum);
+    if(scoreEl) scoreEl.textContent = scores[gameNum];
+}
+
+/* ---------- Initialize UI ---------- */
+window.addEventListener("DOMContentLoaded", () => {
+  const submitBtn = document.getElementById("submit-button");
+
+  // ✅ Check if coming back from Results page due to an error
+  if (localStorage.getItem("enableSubmit") === "true") {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove("done");
+    submitBtn.innerHTML = "Submit";
+
+    // ✅ Clear the flag so it only happens once
+    localStorage.removeItem("enableSubmit");
+  }
+});
+
+
+
+</script>
+</body>
+</html>
