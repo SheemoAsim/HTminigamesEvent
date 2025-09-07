@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tile twist 🖼️ — Puzzle Game</title>
+<link href="style.css" rel="stylesheet">
+</style>
+</head>
+<body style= "background: transparent;">
+
+<div style="display: flex !important; padding: 0; background: transparent;"class="page" id="page">
+  <h2 style= "padding-bottom: 20px; padding-top:20px;">Tile Twist 🖼️</h2>
+
+  <div class="score-info">
+    <div>Best Time: <span class="high-score-2">00:00:00</span></div>
+    <div>Time: <span id="score2">00:00:00</span></div>
+  </div>
+
+  <div class="game-container">
+    <div style="width: 372px; height: 372px; margin-left: 0;" class="game-box">
+      <div id="board-2" class="board" role="grid" aria-label="Puzzle board"></div>
+</div>
+  <div class="overlay" id="overlay"></div>
+</div>
+
+  <button id="retry" onclick="resetGame2()">🔄</button>
+  <div id="retryLeft2"></div>
+
+
+  <!-- Tutorial -->
+<div class="popup" id="tutorial-2">
+  <h3>Tutorial</h3>
+  <p>Welcome to <strong>Tile Twist 🖼️</strong>!</p>
+  <p>1- Flip the tiles and align them correctly to recreate the photo. </p>
+<p>2- Each click flips a tile to the next piece. </p>
+  <p>3-Try to complete the puzzle as fast as possible! ⏱️</p>
+  <p>Good luck, and have fun! 🎉</p>
+  <button id="start-btn-2" onclick="startGame2()">▶ Play</button>
+</div>
+
+
+  <!-- End Popup -->
+  <div class="popup" id="end-popup-2">
+    <h3>🎉 Congratulations!</h3>
+    <p>Your Time: <strong id="final-score-2">00:00:00</strong></p>
+    <p>Best Time: <strong class="high-score-2">00:00:00</strong></p>
+    <button onclick="resetGame2()">Play Again</button>
+    <div style="color: grey !important;" id="retryLeft2"></div>
+  </div>
+</div>
+
+<script>
+/* ---- Game 2 Flip Puzzle ---- */
+
+
+const PHOTOS2 = ["2/1.png","2/2.png","2/3.png","2/4.png"]; // replace with your images
+const cols2 = 4, rows2 = 4, tileW2 = 85, tileH2 = 85;
+const fullW2 = cols2*tileW2, fullH2 = rows2*tileH2;
+
+let moves2 = 0, seconds2 = 0, timerId2 = null;
+let sequences2 = [], positions2 = [];
+let bestTime2 = null;
+let game2Retries = 0;
+const game2MaxRetries = 5;
+
+/* Helpers */
+function formatTime(sec){
+  const m=Math.floor(sec/60).toString().padStart(2,"0");
+  const s=(sec%60).toString().padStart(2,"0");
+  return `00:${m}:${s}`;
+}
+function randInt(n){ return Math.floor(Math.random()*n); }
+function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
+
+/* Start Game */
+function startGame2(){
+  
+  moves2=0; seconds2=0;
+  document.getElementById("score2").textContent="00:00:00";
+  createBoard2();
+  startTimer2();
+  document.getElementById("tutorial-2").style.display="none";
+document.getElementById('overlay').classList.add('hidden');
+  document.getElementById("end-popup-2").style.display="none";
+}
+
+/* Timer */
+function startTimer2(){
+  clearInterval(timerId2);
+  timerId2=setInterval(()=>{
+    seconds2++;
+    document.getElementById("score2").textContent=formatTime(seconds2);
+  },1000);
+}
+
+/* Build board */
+function createBoard2(){
+  const board=document.getElementById("board-2");
+  board.innerHTML=""; sequences2=[]; positions2=[];
+  for(let i=0;i<rows2*cols2;i++){
+    sequences2[i]=shuffle([...Array(PHOTOS2.length).keys()]);
+    positions2[i]=randInt(PHOTOS2.length);
+
+    const row=Math.floor(i/cols2), col=i%cols2;
+    const tile=document.createElement("div");
+    tile.className="tile"; tile.dataset.idx=i;
+
+    const inner=document.createElement("div");
+    inner.className="inner";
+
+    const front=document.createElement("div"); front.className="face front";
+    const back=document.createElement("div"); back.className="face back";
+
+
+
+    inner.append(front,back); tile.appendChild(inner); board.appendChild(tile);
+    tile.addEventListener("click",()=>flipTile2(i,tile,row,col));
+  }
+  renderTiles2();
+}
+
+/* Render images */
+function renderTiles2(){
+  for(let i=0;i<rows2*cols2;i++){
+    const row=Math.floor(i/cols2), col=i%cols2;
+    const idx=positions2[i], seq=sequences2[i];
+    const curPhoto=seq[idx], nextPhoto=seq[(idx+1)%seq.length];
+
+    const tile=document.getElementById("board-2").children[i];
+    const [front,back]=tile.querySelectorAll(".face");
+
+    front.style.background=`url("${PHOTOS2[curPhoto]}") no-repeat`;
+    front.style.backgroundSize=`${fullW2}px ${fullH2}px`;
+    front.style.backgroundPosition=`-${col*tileW2}px -${row*tileH2}px`;
+
+    back.style.background=`url("${PHOTOS2[nextPhoto]}") no-repeat`;
+    back.style.backgroundSize=`${fullW2}px ${fullH2}px`;
+    back.style.backgroundPosition=`-${col*tileW2}px -${row*tileH2}px`;
+  }
+}
+
+/* Flip */
+function flipTile2(i,tile,row,col){
+  moves2++;
+  tile.classList.add("flipping");
+  const inner=tile.querySelector(".inner");
+
+  inner.addEventListener("transitionend",function onEnd(){
+    inner.removeEventListener("transitionend",onEnd);
+    positions2[i]=(positions2[i]+1)%sequences2[i].length;
+    renderTiles2();
+    tile.classList.remove("flipping");
+    checkWin2();
+  },{once:true});
+}
+
+/* Check win */
+function checkWin2() {
+  const photoId = sequences2[0][positions2[0]];
+
+  // Check if all tiles are in correct position
+  if (positions2.every((pos, idx) => sequences2[idx][pos] === photoId)) {
+    clearInterval(timerId2);
+    
+    const finalScoreEl = document.getElementById("final-score-2");
+
+    // Update final score
+    finalScoreEl.textContent = formatTime(seconds2);
+
+    // Update high score in localStorage if needed
+    let storedHighScore = localStorage.getItem("game2HighScore");
+    if (!storedHighScore || seconds2 < parseInt(storedHighScore)) {
+      localStorage.setItem("game2HighScore", seconds2);
+    }
+
+    const highScore = parseInt(localStorage.getItem("game2HighScore"));
+
+    // Update all elements with class 'high-score-2'
+    document.querySelectorAll(".high-score-2").forEach(el => {
+      el.textContent = formatTime(highScore);
+    });
+
+    // Show end popup
+    document.getElementById("end-popup-2").style.display = "block";
+
+    // Send high score to parent
+    window.parent.postMessage({
+      type: "highscore",
+      game: 2, // this child is game 2
+      highscore: highScore 
+    }, "*");
+  }
+}
+
+
+/* ✅ Reset Game (Retry buttons, consumes retry) */
+function resetGame2() {
+  if (game2Retries >= game2MaxRetries) {
+    alert("No retries left!");
+    document.getElementById("end-popup-2").style.display="none"; // close popup if open
+    return;
+  }
+  game2Retries++;
+  updateGame2RetryLeft();
+  startGame2();
+}
+
+/* Update retry counter display */
+function updateGame2RetryLeft(){
+  const retryLeftText = `Retries left: ${game2MaxRetries - game2Retries}/${game2MaxRetries}`;
+  document.getElementById("retryLeft2").textContent = retryLeftText;
+  document.querySelector("#end-popup-2 #retryLeft2").textContent = retryLeftText;
+}
+
+/* Show tutorial at load */
+window.onload=()=>{ 
+  document.getElementById("tutorial-2").style.display="block"; 
+  updateGame2RetryLeft();
+};
+</script>
+</body>
+</html>
