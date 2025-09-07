@@ -1,0 +1,502 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crops Collecter</title>
+<link href="style.css" rel="stylesheet">
+</head>
+<body style= "background: transparent;">
+
+
+<div style="display: flex !important; padding: 20px; "class="page" id="page2">
+<h1>Crops Collecter 👨‍🌾</h1>
+
+<div class="popup" id="tutorial">
+  <h3>Tutorial</h3>
+  <p>Welcome to <strong>Crops Collecter 👨‍🌾</strong>!</p>
+  <p>1- Click the target icon shown in the game screen.</p>
+  <p>2- Don't miss target and don't click other icons (-1pts) .</p>
+  <p>3-Avoid bombs (-5pts) And click <strong style="color: #ff69b4;">Boby</strong> (<span style="color: #ff69b4;">Bonus +10 points</span>).</p>
+<p>Good luck, and have fun! 🎉</p>
+<button id="startBtn"  onclick="closeTutorial()">▶️ Play</button>
+
+</div>
+
+
+
+<div style=" display: flex;
+  align-items: center; gap:3px; padding:5px; width: 100%;height:55px;margin-bottom:0px;" class="score-info" id="scoreInfo">
+  <div>🎯 Target: <img id="targetIcon" src="" width="35" height="35" ></div>
+ | <div style="margin-bottom:15px;" > Score: <br> <span id="score">0</span></div>
+    |  <div style="font-size: 0.85em;margin-bottom:33px;" ><br>🏆High Score: <br><span style="font-size: 1.2em;" id="highscore">0</span></div>
+</div>
+
+<div class="timer-container " id="timerContainer">
+  <div class="timer-bar-bg">
+    <div id="timerBar" class="timer-bar-fill"></div>
+    <div class="timer-seconds" id="timerSeconds">120s</div>
+  </div>
+</div>
+
+<div style="padding-bottom:20px"class="game-area" id="gameArea"></div>
+
+  <button style="padding-top:20px;"id="retry" onclick="resetGame()">🔄</button>
+  <div id="retryLeft"></div>
+
+
+<!-- End Screen Popup -->
+<div id="endScreen" class=" popup">
+  <h3>🎉 Congratulations!</h3>
+  <p>Your Score: <strong id="final-score-1">0</strong></p>
+  <p>High Score: <strong id="high-score-1">0</strong></p>
+  <div style="display:flex; gap:8px; justify-content:center;">
+    <button class="close" onclick="resetGame()">Play Again</button>
+    
+  </div>
+<div style="color: grey !important;" id="retryLeft1"></div>
+</div>
+
+
+</div>
+  <div class="overlay" id="overlay"></div>
+</div>
+
+<audio id="boomSound" src="boom.mp3"></audio>
+<audio id="starSound" src="ding.mp3"></audio>
+
+<script>
+const gameArea = document.getElementById('gameArea');
+const startBtn = document.getElementById('startBtn');
+const targetIconEl = document.getElementById('targetIcon');
+const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('highscore');
+const timerBar = document.getElementById('timerBar');
+const timerSeconds = document.getElementById('timerSeconds');
+const scoreInfo = document.getElementById('scoreInfo');
+const timerContainer = document.getElementById('timerContainer');
+const endScreen = document.getElementById('endScreen');
+const finalScore = document.getElementById('finalScore');
+const boomSound = document.getElementById('boomSound');
+const starSound = document.getElementById('starSound');
+const finalScoreEl = document.getElementById('final-score-1');
+const finalHighScoreEl = document.getElementById('high-score-1');
+const retryLeftEl = document.getElementById('retryLeft');
+const retryLeftEl2 = document.getElementById('retryLeft1');
+
+
+let score = 0, timeLeft = 120;
+let dropInterval = 1200; // Start slower
+let gameLoop, difficultyLoop, timer;
+let targetIcon;
+let glitchRate = 0.02;
+let spawnIntervalId;
+let gameRunning = false;
+let highScore = 0;
+let retries = 0;
+const maxRetries = 5;
+
+
+const folder = '1/';
+const icons = [
+  'Pistachio.png','Revival_Grass.png','Jinjunmei.png','Watermelon.png','Small_Bomb.png',
+  'Honeysuckle.png','Pumpkin.png','Tomato.png',"Pu'er.png",'Tulip.png',
+  'Corn.png','Bean.png','Rose.png','Pomegranate.png','Strawberry.png',
+  'Straw_Mushroom.png','Potato.png','Banana.png','Grape.png','Ginseng.png',
+  'Longjing.png','Onion.png','Mango.png','Jasmine.png','Passion_Fruit.png',
+  'Tangerine.png','Cherry.png','Saffron.png','Monthly_Rose.png','Dahongpao.png',
+  'Pear.png','Biluochun.png','Licorice.png','Peach.png','Blueberry.png',
+  'Chili.png','Queensland_Nut.png','Cordyceps.png','Bonus.png'
+].map(icon => folder + icon);
+
+
+// ✅ Reset Game (Retry buttons, consumes retry)
+function resetGame() {
+  if (retries >= maxRetries) {
+    alert("No retries left!");
+    return;
+  }
+  retries++;
+  updateRetryLeft();
+  
+  // Clear all intervals
+  clearInterval(gameLoop);
+  clearInterval(difficultyLoop);
+  clearInterval(timer);
+  
+  // Clear any pending timeouts
+  const highestTimeoutId = setTimeout(() => {}, 0);
+  for (let i = 0; i < highestTimeoutId; i++) {
+    clearTimeout(i);
+  }
+  
+  gameArea.innerHTML = '';
+  startGame();
+}
+
+function updateRetryLeft() {
+  retryLeftEl.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
+  retryLeftEl2.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
+}
+
+
+function closeTutorial(){
+    document.getElementById('tutorial').classList.add('hidden');
+document.getElementById('overlay').classList.add('hidden');
+   
+startGame();
+}
+
+function startGame() {
+  score = 0;
+  timeLeft = 120;
+
+  scoreEl.textContent = score;
+  timerSeconds.textContent = `${timeLeft}s`;
+  gameArea.innerHTML = '';
+endScreen.style.display="none";
+  
+
+
+
+  const safeIcons = icons.filter(i => !i.includes('Small_Bomb') && !i.includes('Bonus'));
+  targetIcon = safeIcons[Math.floor(Math.random() * safeIcons.length)];
+  targetIconEl.src = targetIcon;
+  dropInterval = 400; // slow start
+  let iconsPerDrop = 2;
+  let dropIcons = true;
+  let batchInterval = setInterval(() => {
+    dropIcons = !dropIcons;
+  }, 300); // 600ms gap between batches
+
+  function startGameLoop() {
+    return setInterval(() => {
+      if (dropIcons) {
+        for (let i = 0; i < iconsPerDrop; i++) createFallingIcon();
+      }
+    }, dropInterval);
+  }
+
+   gameLoop = startGameLoop();
+
+  // Increase speed and icons over time
+let startTime = Date.now();
+const milestones = [
+  { progress: 0, interval: 700, icons: 2, gap: 500 },
+ { progress: 0.05, interval: 600, icons: 2, gap: 550 },
+  { progress: 0.10, interval: 600, icons: 3, gap: 550 },
+  { progress: 0.20, interval: 650, icons: 3, gap: 500 },
+  { progress: 0.30, interval: 550, icons: 4, gap: 550 },
+  { progress: 0.40, interval: 600, icons: 4, gap: 550 },
+  { progress: 0.60, interval: 550, icons: 4, gap: 600 },
+  { progress: 0.80, interval: 600, icons: 5, gap: 600 },
+  { progress: 1, interval: 650, icons: 5, gap: 600 },
+ 
+];
+  let currentMilestoneIndex = 0;
+  difficultyLoop = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 900;
+    const progress = Math.min(elapsed / 120, 1);
+    while (currentMilestoneIndex < milestones.length - 1 && progress >= milestones[currentMilestoneIndex + 1].progress) {
+      currentMilestoneIndex++;
+    }
+    const currentMilestone = milestones[currentMilestoneIndex];
+    const nextMilestone = milestones[Math.min(currentMilestoneIndex + 1, milestones.length - 1)];
+    const progressBetweenMilestones = (progress - currentMilestone.progress) / (nextMilestone.progress - currentMilestone.progress);
+    dropInterval = Math.max(600, currentMilestone.interval + (nextMilestone.interval - currentMilestone.interval) * progressBetweenMilestones);
+    iconsPerDrop = currentMilestone.icons + Math.floor((nextMilestone.icons - currentMilestone.icons) * progressBetweenMilestones);
+
+  
+
+
+clearInterval(batchInterval);
+batchInterval = setInterval(() => {
+  dropIcons = !dropIcons;
+}, Math.max(200, currentMilestone.gap + (nextMilestone.gap - currentMilestone.gap) * progressBetweenMilestones)); // decrease gap as progress increases
+
+    clearInterval(gameLoop);
+    gameLoop = startGameLoop();
+  }, 2000);
+
+// Schedule end set to start near the final seconds
+setTimeout(() => {
+  startEndSet();
+}, 112000); // start after 90s (or adjust when normal sets finish)
+
+
+  timer = setInterval(() => {
+    timeLeft--;
+    timerBar.style.width = (timeLeft/120*100)+'%';
+    timerSeconds.textContent = `${timeLeft}s`;
+    if(timeLeft<=0) endGame();
+  },1000);
+}
+
+
+function createFallingIcon() {
+  const iconEl = document.createElement('img');
+  iconEl.classList.add('icon');
+
+ const r = Math.random() * 100;
+  let chosen, isFakeTarget = false, isGlitch = false;
+
+  if (r < 35) {
+    // 35% chance: Target icon
+    chosen = targetIcon;
+  } else if (r < 45) {
+    // 10% chance: Bomb
+    chosen = '1/Small_Bomb.png';
+  } else if (r < 50) {
+    // 5% chance: Bonus
+    chosen = '1/Bonus.png';
+  } else {
+    // Remaining: other icons or glitch
+    if (Math.random() < glitchRate) {
+      chosen = targetIcon;
+      isGlitch = true;
+      iconEl.classList.add('glitchIcon');
+    } else {
+      const others = icons.filter(i => !['1/Small_Bomb.png','1/Bonus.png'].includes(i) && i !== targetIcon);
+      chosen = others[Math.floor(Math.random() * others.length)];
+    }
+  }
+
+  iconEl.src=chosen;
+  if(isFakeTarget) iconEl.dataset.fake='true';
+
+  const size = Math.floor(Math.random()*25)+45;
+  iconEl.style.width=`${size}px`;
+  iconEl.style.height=`${size}px`;
+
+  const W=gameArea.offsetWidth;
+  const H=gameArea.offsetHeight;
+  let missed=true;
+
+  const fallTime = 2.8 + Math.random()*0.5;
+  const swayTime = 1 + Math.random()*0.5;
+
+
+
+
+  // Random direction always
+  const dirs=['top','right','left','bottom'];
+  let dir = dirs[Math.floor(Math.random()*dirs.length)];
+
+   // Apply position + animation
+  if (dir === 'top') {
+    iconEl.style.left = `${Math.random() * (W - size)}px`;
+    iconEl.style.top = '-80px';
+    iconEl.style.animation = `fallEase ${fallTime}s cubic-bezier(0.55, 0.05, 0.675, 0.19) forwards, sway ${swayTime}s ease-in-out infinite alternate`;
+  } else if (dir === 'right') {
+    iconEl.style.top = `${Math.random() * (H - size)}px`;
+    iconEl.style.left = `${W + 50}px`;
+    iconEl.style.animation = `slideLeft ${fallTime}s cubic-bezier(0.55, 0.05, 0.675, 0.19) forwards, sway ${swayTime}s ease-in-out infinite alternate`;
+  } else if (dir === 'left') {
+    iconEl.style.top = `${Math.random() * (H - size)}px`;
+    iconEl.style.left = `-${size + 50}px`;
+    iconEl.style.animation = `slideRight ${fallTime}s cubic-bezier(0.55, 0.05, 0.675, 0.19) forwards, sway ${swayTime}s ease-in-out infinite alternate`;
+  } else if (dir === 'bottom') {
+    iconEl.style.left = `${Math.random() * (W - size)}px`;
+    iconEl.style.top = `${H + 50}px`;
+    iconEl.style.animation = `riseUp ${fallTime}s cubic-bezier(0.55, 0.05, 0.675, 0.19) forwards, sway ${swayTime}s ease-in-out infinite alternate`;
+  }
+
+
+  iconEl.addEventListener('pointerdown',(e)=>{
+    e.stopPropagation(); missed=false;
+    if(chosen==='1/Small_Bomb.png'){ score=Math.max(0,score-5); boomSound.play(); triggerShake(); }
+    else if(chosen==='1/Bonus.png'){ score+=10; starSound.play(); }
+    else if(isGlitch) score=Math.max(0,score-2);
+    else if(isFakeTarget) score=Math.max(0,score-2);
+    else if(chosen===targetIcon) score+=1;
+    else score=Math.max(0,score-1);
+
+    scoreEl.textContent=score;
+    iconEl.remove();
+  });
+
+  iconEl.addEventListener('animationend', () => {
+  iconEl.remove();
+  if (missed && chosen === targetIcon) {
+    score = Math.max(0, score - 1); // decrease score by 1
+    scoreEl.textContent = score;
+  }
+});
+  gameArea.appendChild(iconEl);
+}
+
+const styleSheet = document.createElement('style');
+styleSheet.innerHTML=`
+@keyframes fallEase { 0% { top: -80px; } 100% { top: 500px; } }
+@keyframes sway { 0% { transform: translateX(-5px) rotate(-2deg); } 50% { transform: translateX(5px) rotate(2deg); } 100% { transform: translateX(-5px) rotate(-2deg); } }
+@keyframes slideLeft { 0% { left: 100%; } 100% { left: -80px; } }
+@keyframes slideRight { 0% { left: -80px; } 100% { left: 100%; } }
+@keyframes riseUp { 0% { top: 100%; } 100% { top: -80px; } }
+`;
+document.head.appendChild(styleSheet);
+
+function triggerShake(){
+    gameArea.classList.add('shake');
+    setTimeout(()=> gameArea.classList.remove('shake'), 500);
+}
+function triggerSparkle(x, y){
+    const sparkle = document.createElement('div');
+    sparkle.className = 'sparkle';
+    sparkle.style.left = (x - gameArea.offsetLeft - 30) + 'px';
+    sparkle.style.top = (y - gameArea.offsetTop - 30) + 'px';
+    gameArea.appendChild(sparkle);
+    setTimeout(()=> sparkle.remove(), 800);
+}
+
+function endGame(){
+  clearInterval(gameLoop); clearInterval(difficultyLoop); clearInterval(timer);
+  gameArea.innerHTML = ''; // Remove remaining icons immediately
+endScreen.style.display="block";
+  document.getElementById('overlay').style.display = "block";
+finalScoreEl.textContent = score;
+
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("gameHighScore", highScore);
+    highScoreEl.textContent = highScore;
+  }
+  finalHighScoreEl.textContent = highScore;
+
+  // Identify the game (1,2,3)
+  window.parent.postMessage({ 
+    type: "highscore", 
+    game: 1,  // ← change per child (1, 2, 3)
+    highscore: highScore 
+  }, "*");
+}
+
+
+function createIcon() {
+  const icon = document.createElement('div');
+  icon.classList.add('falling-icon');
+  icon.textContent = randomIcon(); // Your icon function
+  icon.style.left = `${Math.random() * 90}vw`;
+  icon.style.setProperty('--speed', `${Math.random() * 2 + 2}s`);
+  icon.style.setProperty('--rotation', `${Math.random() * 360}deg`);
+  document.body.appendChild(icon);
+
+  // Remove after animation
+  setTimeout(() => icon.remove(), 4000);
+}
+
+
+// --- END SET LOGIC ---
+// --- END SET LOGIC ---
+function startEndSet() {
+  function spawnEndIcons() {
+    if (timeLeft <= 0) return; // Stop when time is up
+
+    const count = 5; // how many icons per wave for rain effect
+    for (let i = 0; i < count; i++) {
+      const iconEl = document.createElement('img');
+      iconEl.classList.add('icon');
+
+      // Determine icon type with given probabilities
+      const r = Math.random();
+      let chosen;
+      if (r < 0.2) {
+        chosen = '1/Small_Bomb.png'; // 20%
+      } else if (r < 0.6) {
+        chosen = '1/Bonus.png'; // 40%
+      } else {
+        chosen = targetIcon; // 40%
+      }
+      iconEl.src = chosen;
+
+      // Random size
+      const size = Math.floor(Math.random() * 25) + 45;
+      iconEl.style.width = `${size}px`;
+      iconEl.style.height = `${size}px`;
+
+      // Random direction (top, left, right, bottom)
+      const directions = ['top', 'left', 'right', 'bottom'];
+      const direction = directions[Math.floor(Math.random() * directions.length)];
+      const W = gameArea.offsetWidth;
+      const H = gameArea.offsetHeight;
+
+      let startX = 0, startY = 0, endX = 0, endY = 0;
+      const travelDist = 200; // distance to move inwards
+
+      if (direction === 'top') {
+        startX = Math.random() * (W - size);
+        startY = -size;
+        endX = startX;
+        endY = H + travelDist;
+      } else if (direction === 'bottom') {
+        startX = Math.random() * (W - size);
+        startY = H + size;
+        endX = startX;
+        endY = -travelDist;
+      } else if (direction === 'left') {
+        startX = -size;
+        startY = Math.random() * (H - size);
+        endX = W + travelDist;
+        endY = startY;
+      } else if (direction === 'right') {
+        startX = W + size;
+        startY = Math.random() * (H - size);
+        endX = -travelDist;
+        endY = startY;
+      }
+
+      iconEl.style.left = `${startX}px`;
+      iconEl.style.top = `${startY}px`;
+
+      // Random animation duration for natural rain
+      const duration = (Math.random() * 2 + 2).toFixed(2); // 1.5s to 3s
+
+      iconEl.animate([
+        { transform: `translate(${startX}px, ${startY}px)` },
+        { transform: `translate(${endX}px, ${endY}px)` }
+      ], {
+        duration: duration * 1000,
+        easing: 'linear',
+        fill: 'forwards'
+      });
+
+      // Click behavior
+      iconEl.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        if (chosen === '1/Small_Bomb.png') {
+          score = Math.max(0, score - 5);
+          boomSound.play();
+          triggerShake();
+        } else if (chosen === '1/Bonus.png') {
+          score += 10;
+          starSound.play();
+        } else if (chosen === targetIcon) {
+          score += 1;
+        }
+        scoreEl.textContent = score;
+        iconEl.remove();
+      });
+
+      // Remove when animation ends
+      setTimeout(() => iconEl.remove(), duration * 1000);
+
+      gameArea.appendChild(iconEl);
+    }
+
+    // Repeat spawning fast for rain effect
+    setTimeout(spawnEndIcons, 400); // every 0.4s for heavy rain
+  }
+
+  spawnEndIcons();
+}
+
+
+window.onload=()=>{ 
+  document.getElementById("tutorial").style.display="block"; 
+    updateRetryLeft();
+};
+
+
+</script>
+</body>
+</html>
