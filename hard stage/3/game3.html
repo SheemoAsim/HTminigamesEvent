@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🎯 Target Shadow Game</title>
+<style>
+:root {
+  --glass: rgba(255,255,255,.15);
+  --glass-strong: rgba(255,255,255,.25);
+  --text: #fff;
+}
+* {box-sizing:border-box;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+html, body {height:100%;margin:0;}
+body {background:transparent;color:var(--text);overflow:hidden;}
+
+#arena {position:relative;width:100vw;height:480px;overflow:hidden;}
+
+#hud { 
+  display:flex; justify-content:space-between; align-items:center; 
+  gap:15px; font-size:1.1em; padding:8px 12px; 
+  background:rgba(255,255,255,0.08); 
+  border-radius:10px; max-width:400px; margin:0 auto; 
+}
+
+#timerWrap {position:absolute;top:10%;left:50%;transform:translateX(-50%);
+width:200px;height:10px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden;z-index:5;}
+#timerBar {height:15px;width:250px;background:#ffeb3b;transition:width linear; top:20%;}
+
+#shadowWrap {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+width:80px;height:80px;display:flex;align-items:center;justify-content:center;z-index:2;}
+#shadowIcon
+{width:58px;height:58px;opacity:.6;filter:brightness(0) saturate(1);z-index:10; object-fit:contain;}
+
+#movingIcon {width:58px;height:58px;z-index:30; object-fit:contain;}
+
+
+#moving {position:fixed;width:80px;height:80px;display:flex;align-items:center;justify-content:center;
+z-index:3;pointer-events:none;}
+#moving img {width:58px;height:58px;z-index:100;}
+
+#choicesBar {
+width: 300px;
+    position: absolute;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    background: var(--glass);
+    border: 1px solid var(--glass-strong);
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    z-index: 5;
+
+}
+
+
+.choice:hover {transform:translateY(-2px);background:rgba(255,255,255,.18);}
+.choice img {pointer-events:none; gap:20px;object-fit:contain;}
+
+#stopBtn {position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+display:none;background:#fff;color:#263238;border:none;border-radius:12px;
+padding:12px 26px;font-size:18px;font-weight:700;cursor:pointer;z-index:5;
+box-shadow:0 10px 28px rgba(0,0,0,.25);}
+#stopBtn:active{transform:translateX(-50%) scale(.98);}
+
+.popup {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+width:min(92vw,480px);padding:20px;background:#fff;color:#263238;border-radius:16px;
+text-align:center;z-index:1000;display:none;box-shadow:0 20px 40px rgba(0,0,0,.25);}
+.popup h2{margin:.2em 0 .4em;font-size:24px;}
+.popup button{    font-size: 1em;
+    padding: 10px 20px;
+    margin-top: 15px;
+    background: #6E0010;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;}
+
+.overlay {  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.6);
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  color:white; font-size:1.2em; padding:20px; text-align:center; z-index:400;}
+
+  .hidden { display: none !important; }
+
+#wrongFlash {position:absolute;inset:0;background:rgba(255,0,0,.28);z-index:9;display:none;animation:flash .25s ease;}
+@keyframes flash{from{opacity:0}to{opacity:1}}
+
+#rightFlash {position:absolute;inset:0;background:rgba(0,255,0,.28);z-index:9;display:none;animation:flash .25s ease;}
+@keyframes flash{from{opacity:0}to{opacity:1}}
+
+</style>
+</head>
+<body>
+
+<div id="arena">
+  <div id="hud">
+<div >High Score:<span id="highScore">0</span></div>
+  |  <div>Score: <span id="score">0</span></div> |
+<div>Lives: <span id="lives">3</span></div>
+  </div>
+  <div id="timerWrap"><div id="timerBar"></div></div>
+  <div id="shadowWrap"><img id="shadowIcon" src="" alt="shadow icon"></div>
+  <div id="moving" style="display:none; "><img id="movingIcon" src="" alt="moving icon"></div>
+  <button id="stopBtn">STOP</button>
+  <div style="gap:20px"id="choicesBar"></div>
+  <div id="wrongFlash"></div>
+<div id="rightFlash"></div>
+
+</div>
+  <div class="overlay" id="overlay"></div>
+</div>
+
+
+  <div id="tutorial" class="popup">
+  <h3>Tutorials</h3>
+  <p>Welcome to <strong>Icon Catcher 🎯</strong>!</p>
+ <p>1- Shadow of a certain icon will appear on the screen.</p>
+  <p>2- Find and click the <strong>correct icon</strong> from table that matches the shadow.</p>
+  <p>1- Watch the icon as it moves around.</p>
+  <p>3- Press <strong>STOP</strong> when it aligns with the <strong> target shadow</strong>. Stay sharp, and aim well! </p>
+
+ <p>Good luck, and have fun! 🎉</p>
+  <button id="startBtn">▶️ Play</button>
+</div>
+
+
+  <div id="gameOver" class="popup">
+    <h2>Game Over</h2>
+    <p id="finalText">Score: 0</p>
+  <p id="finalHigh">High Score: 0</p> <!-- ✅ New line -->
+    <button id="againBtn">Play Again</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+ const SETS = [];
+ for (let i = 0; i < 14; i++) {
+   const start = (i * 3) + 1;
+   const set = [`${start}.png`, `${start+1}.png`, `${start+2}.png`];
+   SETS.push(set);
+ }
+
+ const shadowIcon=document.getElementById('shadowIcon');
+ const movingBox=document.getElementById('moving');
+ const movingIcon=document.getElementById('movingIcon');
+ const choicesBar=document.getElementById('choicesBar');
+ const stopBtn=document.getElementById('stopBtn');
+ const livesEl=document.getElementById('lives');
+ const scoreEl=document.getElementById('score');
+ const highScoreEl=document.getElementById('highScore');
+ const tutorial=document.getElementById('tutorial');
+ const startBtn=document.getElementById('startBtn');
+ const gameOver=document.getElementById('gameOver');
+const overlay=document.getElementById('overlay');
+ const againBtn=document.getElementById('againBtn');
+ const wrongFlash=document.getElementById('wrongFlash');
+const
+rightFlash=document.getElementById('rightFlash');
+const finalText=document.getElementById('finalText');
+ const timerBar=document.getElementById('timerBar');
+
+ let level=1,lives=3,score=0,high=+localStorage.getItem('ts_high')||0;
+ let size=80,targetUrl="",axis="h",dir=1,raf=null;
+ let arenaW=0,arenaH=0,centerX=0,centerY=0,pos=0,vel=260;
+ let timerId=null;
+ let shuffledSets=[],setPointer=0;
+
+ const updateHUD=()=>{livesEl.textContent=lives;scoreEl.textContent=score;highScoreEl.textContent=high;}
+ const show=el=>el.style.display='block';
+ const hide=el=>el.style.display='none';
+ const flashWrong=()=>{show(wrongFlash);setTimeout(()=>hide(wrongFlash),160);}
+
+ const flashright=()=>{show(rightFlash);setTimeout(()=>hide(rightFlash),160);}
+
+
+
+ function layout(){
+   const a=document.getElementById('arena').getBoundingClientRect();
+   arenaW=a.width;arenaH=a.height;
+   centerX = arenaW/2;
+   centerY = arenaH/2;
+ }
+
+ function shuffle(arr){
+   for(let i=arr.length-1;i>0;i--){
+     const j=Math.floor(Math.random()*(i+1));
+     [arr[i],arr[j]]=[arr[j],arr[i]];
+   }
+   return arr;
+ }
+
+ function initSets(){
+   shuffledSets=shuffle([...SETS]);
+   setPointer=0;
+ }
+
+ function pickTarget(){
+   if(setPointer>=shuffledSets.length) initSets();
+   const set=shuffledSets[setPointer++];
+   targetUrl=set[Math.floor(Math.random()*set.length)];
+
+   // random size 25–70px
+   size=25+Math.floor(Math.random()*(45-25+1));
+   shadowIcon.src=targetUrl;
+   shadowIcon.style.width=size+"px";
+   shadowIcon.style.height=size+"px";
+   buildChoices(set);
+ }
+
+ function buildChoices(set){
+   choicesBar.innerHTML="";
+   set.forEach(url=>{
+     const b=document.createElement('button');b.className="choice";
+     const img=document.createElement('img');img.src=url;
+     img.style.width=size+"px"; img.style.height=size+"px";
+     b.appendChild(img);
+     b.onclick=()=>choose(url);
+     choicesBar.appendChild(b);
+   });
+ }
+
+ function startLevel(){
+   hide(stopBtn);hide(movingBox);
+   layout();pickTarget();resetTimer();
+ }
+
+ function choose(url){
+   if(url!==targetUrl) return mistake();
+   startRun();
+ }
+
+ function startRun(){
+   hide(choicesBar);
+   show(stopBtn);
+   movingIcon.src=targetUrl;
+   movingIcon.style.width=size+"px";
+   movingIcon.style.height=size+"px";
+   show(movingBox);
+   layout();
+
+   axis = Math.random()<0.5?'h':'v';
+   dir = Math.random()<0.5?1:-1;
+   vel = 260 + level*25;
+
+   if(axis==='h'){
+     pos = dir===1?-size/2:arenaW+size/2;
+     setPos(pos, centerY);
+   } else {
+     pos = dir===1?-size/2:arenaH+size/2;
+     setPos(centerX, pos);
+   }
+
+   let last=performance.now();
+   const step=(now)=>{
+     const dt=(now-last)/1000; last=now;
+     pos+=vel*dt*dir;
+     const min=size/2;
+     const max=axis==='h'?arenaW-size/2:arenaH-size/2;
+     if(pos>=max){pos=max;dir*=-1;}
+     if(pos<=min){pos=min;dir*=-1;}
+     setPos(axis==='h'?pos:centerX, axis==='h'?centerY:pos);
+     raf=requestAnimationFrame(step);
+   };
+   raf=requestAnimationFrame(step);
+ }
+
+ function setPos(x,y){movingBox.style.left=(x-size/2)+'px';movingBox.style.top=(y-size/2)+'px';}
+ function stopRun(){if(raf){cancelAnimationFrame(raf);raf=null;}}
+
+ function resetTimer(){
+   clearTimeout(timerId);
+   timerBar.style.transition='none'; timerBar.style.width='100%';
+   setTimeout(()=>{timerBar.style.transition='width 10s linear'; timerBar.style.width='0%';},50);
+   timerId=setTimeout(()=>mistake(),10000);
+ }
+
+ stopBtn.onclick=()=>{
+   stopRun(); clearTimeout(timerId);
+   const cx=parseFloat(movingBox.style.left)+size/2;
+   const cy=parseFloat(movingBox.style.top)+size/2;
+   layout();
+   let distance=Math.sqrt(Math.pow(cx-centerX,2)+Math.pow(cy-centerY,2));
+   let tolerance=size*0.4;
+   hide(stopBtn);
+   if(distance<=tolerance){ success(); }
+   else mistake();
+ };
+
+ function success(){
+   setTimeout(()=>{
+flashright();
+     score++; if(score>high){high=score; localStorage.setItem('ts_high',high);}
+
+     level++; updateHUD(); show(choicesBar); startLevel();
+   },130);
+ }
+
+ function mistake(){
+   lives--; updateHUD(); flashWrong(); hide(stopBtn); hide(movingBox); show(choicesBar); stopRun(); clearTimeout(timerId);
+if(lives<=0){ 
+  finalText.textContent = 'Score: ' + score;
+  document.getElementById("finalHigh").textContent = 'High Score: ' + high; // ✅ update popup
+  show(gameOver);show(overlay);
+
+  // ✅ Send high score to parent frame
+  window.parent.postMessage({
+    type: "highscore",
+    game: 3,          // give this game an ID (e.g., 4)
+    highscore: high   // send the raw number
+  }, "*");
+}
+
+   else { startLevel(); }
+ }
+
+ startBtn.onclick=()=>{ hide(tutorial); hide(overlay); lives=3; score=0; level=1; initSets(); updateHUD(); startLevel(); }
+ againBtn.onclick=()=>{ hide(gameOver); hide(overlay);lives=3; score=0; level=1; initSets(); updateHUD(); startLevel(); }
+
+ show(tutorial);show(overlay);
+})();
+</script>
+</body>
+</html>
