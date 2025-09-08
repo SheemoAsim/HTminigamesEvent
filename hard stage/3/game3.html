@@ -98,47 +98,62 @@ text-align:center;z-index:1000;display:none;box-shadow:0 20px 40px rgba(0,0,0,.2
 </head>
 <body>
 
+<!-- Developer Reset Button -->
+
+
 <div id="arena">
   <div id="hud">
-<div >High Score:<span id="highScore">0</span></div>
-  |  <div>Score: <span id="score">0</span></div> |
-<div>Lives: <span id="lives">3</span></div>
+    <div>High Score:<span id="highScore">0</span></div> |
+    <div>Score: <span id="score">0</span></div> |
+    <div>Lives: <span id="lives">3</span></div>
   </div>
+
   <div id="timerWrap"><div id="timerBar"></div></div>
   <div id="shadowWrap"><img id="shadowIcon" src="" alt="shadow icon"></div>
-  <div id="moving" style="display:none; "><img id="movingIcon" src="" alt="moving icon"></div>
+  <div id="moving" style="display:none;"><img id="movingIcon" src="" alt="moving icon"></div>
   <button id="stopBtn">STOP</button>
-  <div style="gap:20px"id="choicesBar"></div>
+  <div id="choicesBar" style="gap:20px"></div>
   <div id="wrongFlash"></div>
-<div id="rightFlash"></div>
-
-</div>
-  <div class="overlay" id="overlay"></div>
+  <div id="rightFlash"></div>
 </div>
 
+<!-- Retry Button below game container -->
+<div style="text-align:center; margin-top:10px;">
+  <button id="retryBtn" style="background:transparent; color:white; border:2px solid white; border-radius:8px; padding:8px 16px; cursor:pointer;">Retry</button>
+  <div class="retryCounter" style="margin-top:4px;">Retries left: 1/1</div>
+</div>
 
-  <div id="tutorial" class="popup">
+<div class="overlay" id="overlay"></div>
+
+<div id="tutorial" class="popup">
   <h3>Tutorials</h3>
   <p>Welcome to <strong>Icon Catcher 🎯</strong>!</p>
- <p>1- Shadow of a certain icon will appear on the screen.</p>
+  <p>1- Shadow of a certain icon will appear on the screen.</p>
   <p>2- Find and click the <strong>correct icon</strong> from table that matches the shadow.</p>
   <p>1- Watch the icon as it moves around.</p>
   <p>3- Press <strong>STOP</strong> when it aligns with the <strong> target shadow</strong>. Stay sharp, and aim well! </p>
-
- <p>Good luck, and have fun! 🎉</p>
+  <p>Good luck, and have fun! 🎉</p>
   <button id="startBtn">▶️ Play</button>
 </div>
 
-
-  <div id="gameOver" class="popup">
-    <h2>Game Over</h2>
-    <p id="finalText">Score: 0</p>
-  <p id="finalHigh">High Score: 0</p> <!-- ✅ New line -->
-    <button id="againBtn">Play Again</button>
-  </div>
+<div id="gameOver" class="popup">
+  <h2>Game Over</h2>
+  <p id="finalText">Score: 0</p>
+  <p id="finalHigh">High Score: 0</p>
+  <button id="againBtn">Play Again</button>
+<div class="retryCounter" style="margin-top:4px;color:grey;">Retries left: 1/1</div>
+</div>
 </div>
 
+
+
+
 <script>
+
+
+
+
+
 (()=>{
  const SETS = [];
  for (let i = 0; i < 14; i++) {
@@ -158,13 +173,18 @@ text-align:center;z-index:1000;display:none;box-shadow:0 20px 40px rgba(0,0,0,.2
  const tutorial=document.getElementById('tutorial');
  const startBtn=document.getElementById('startBtn');
  const gameOver=document.getElementById('gameOver');
-const overlay=document.getElementById('overlay');
+ const overlay=document.getElementById('overlay');
  const againBtn=document.getElementById('againBtn');
  const wrongFlash=document.getElementById('wrongFlash');
-const
-rightFlash=document.getElementById('rightFlash');
-const finalText=document.getElementById('finalText');
+ const rightFlash=document.getElementById('rightFlash');
+ const finalText=document.getElementById('finalText');
  const timerBar=document.getElementById('timerBar');
+
+ // Retry elements
+ const retryBtn = document.getElementById('retryBtn');
+
+ let maxRetries = 2;
+ let retries = parseInt(localStorage.getItem('ts_retries') || maxRetries);
 
  let level=1,lives=3,score=0,high=+localStorage.getItem('ts_high')||0;
  let size=80,targetUrl="",axis="h",dir=1,raf=null;
@@ -172,14 +192,16 @@ const finalText=document.getElementById('finalText');
  let timerId=null;
  let shuffledSets=[],setPointer=0;
 
+
+const retryLeftEls = document.querySelectorAll(".retryCounter");
+
+
+
  const updateHUD=()=>{livesEl.textContent=lives;scoreEl.textContent=score;highScoreEl.textContent=high;}
  const show=el=>el.style.display='block';
  const hide=el=>el.style.display='none';
  const flashWrong=()=>{show(wrongFlash);setTimeout(()=>hide(wrongFlash),160);}
-
  const flashright=()=>{show(rightFlash);setTimeout(()=>hide(rightFlash),160);}
-
-
 
  function layout(){
    const a=document.getElementById('arena').getBoundingClientRect();
@@ -205,9 +227,8 @@ const finalText=document.getElementById('finalText');
    if(setPointer>=shuffledSets.length) initSets();
    const set=shuffledSets[setPointer++];
    targetUrl=set[Math.floor(Math.random()*set.length)];
-
-   // random size 25–70px
-   size=25+Math.floor(Math.random()*(45-25+1));
+   const minSize = 25, maxSize = 45;
+   size = Math.max(minSize, maxSize - level*2);
    shadowIcon.src=targetUrl;
    shadowIcon.style.width=size+"px";
    shadowIcon.style.height=size+"px";
@@ -295,36 +316,107 @@ const finalText=document.getElementById('finalText');
 
  function success(){
    setTimeout(()=>{
-flashright();
+     flashright();
      score++; if(score>high){high=score; localStorage.setItem('ts_high',high);}
-
      level++; updateHUD(); show(choicesBar); startLevel();
    },130);
  }
 
  function mistake(){
    lives--; updateHUD(); flashWrong(); hide(stopBtn); hide(movingBox); show(choicesBar); stopRun(); clearTimeout(timerId);
-if(lives<=0){ 
-  finalText.textContent = 'Score: ' + score;
-  document.getElementById("finalHigh").textContent = 'High Score: ' + high; // ✅ update popup
-  show(gameOver);show(overlay);
-
-  // ✅ Send high score to parent frame
-  window.parent.postMessage({
-    type: "highscore",
-    game: 3,          // give this game an ID (e.g., 4)
-    highscore: high   // send the raw number
-  }, "*");
-}
-
-   else { startLevel(); }
+   if(lives<=0){ 
+     finalText.textContent = 'Score: ' + score;
+     document.getElementById("finalHigh").textContent = 'High Score: ' + high;
+     show(gameOver);show(overlay);
+     window.parent.postMessage({ type: "highscore", game: 3, highscore: high }, "*");
+   } else { startLevel(); }
  }
 
- startBtn.onclick=()=>{ hide(tutorial); hide(overlay); lives=3; score=0; level=1; initSets(); updateHUD(); startLevel(); }
- againBtn.onclick=()=>{ hide(gameOver); hide(overlay);lives=3; score=0; level=1; initSets(); updateHUD(); startLevel(); }
+
+ // Retry logic
+ function updateRetryDisplay() {
+  let displayTotal = maxRetries - 1; // only retries are shown
+  let displayRetries;
+
+  if (retries >= maxRetries) {
+    // Initial free play → show full
+    displayRetries = displayTotal;
+  } else {
+    // After consuming retries
+    displayRetries = Math.max(0, displayTotal - (maxRetries - 1 - retries));
+  }
+
+  retryLeftEls.forEach(el => {
+    el.textContent = `Retries left: ${displayRetries}/${displayTotal}`;
+  });
+
+  localStorage.setItem("ts_retries", retries);
+}
+
+
+ retryBtn.onclick = () => {
+  if (retries > 0) {
+    retries--;
+    localStorage.setItem("ts_retries", retries);
+    updateRetryDisplay();
+    hide(gameOver); hide(overlay);
+    lives = 3; score = 0; level = 1;
+    initSets(); updateHUD(); startLevel();
+  } else {
+alert("No retries left!");
+   
+    disableGame();
+  }
+};
+
+
+ againBtn.onclick = () => {
+  if (retries > 0) {
+    retries--;
+    localStorage.setItem("ts_retries", retries);
+    updateRetryDisplay();
+    hide(gameOver); hide(overlay);
+    lives = 3; score = 0; level = 1;
+    initSets(); updateHUD(); startLevel();
+  } else {
+alert("No retries left!");
+    document.getElementById("gameOver").classList.add("hidden");
+    disableGame();
+  }
+};
+
+
+startBtn.onclick = () => {
+  if (retries > 0) {
+    retries--; // consume one retry
+    localStorage.setItem("ts_retries", retries); // save retries
+    updateRetryDisplay(); // update all retry displays
+
+    hide(tutorial); 
+    hide(overlay);
+
+    // Reset game state
+    lives = 3;
+    score = 0;
+    level = 1;
+    initSets();       // shuffle and reset icon sets
+    updateHUD();      // update lives, score, high score
+    startLevel();     // pick target and show choices
+  } else {
+    alert("No retries left!");
+    disableGame(); // fully disable the game if retries hit 0
+  }
+};
+
+
+ // Onload retry display
+ updateRetryDisplay();
+ if(retries<=0){ disableGame(); }
 
  show(tutorial);show(overlay);
+
 })();
+
 </script>
 </body>
 </html>
