@@ -11,7 +11,7 @@
 
   body {
     margin: 0;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+
     color: #fff;
     text-align: center;
     min-height: 100vh;
@@ -166,7 +166,7 @@ align-items:center;
   <p>3- You only have <strong>3 mistakes</strong> for each level — be careful!</p>
   <p>Good luck, and have fun! 🎉</p>
   
-  <button onclick="startGame()">▶️ Play</button>
+  <button onclick="resetGame()">▶️ Play</button>
 </div>
 
   <button style="background: transparent; padding:2px; font-size:1.5em; "id="retryBtn" onclick="resetGame()">🔄</button>
@@ -174,9 +174,11 @@ align-items:center;
 
 
 
+
 <script>
+
 let retries = 0;
-const maxRetries = 1;
+const maxRetries = 2; // ✅ internally 2 (first + one retry)
 let attempts = 3; // ✅ 3 lives
 
 const allItems = [
@@ -192,12 +194,14 @@ const scoreEl = document.getElementById("score");
 const highScoreText = document.getElementById("highScoreText");
 const finalScore = document.getElementById("finalScore");
 const finalHighScore = document.getElementById("finalHighScore");
-const attemptsEl = document.getElementById("attempts"); // ✅ lives HUD
+const attemptsEl = document.getElementById("attempts"); 
+const retryLeftEls = document.getElementsByClassName('retry-left');
+const gameContainer = document.getElementById("gameContainer");
 
 
 function startGame() {
   score = 0;
-  attempts = 3; // ✅ reset lives
+  attempts = 3; 
   attemptsEl.textContent = attempts;
   scoreEl.textContent = score;
   hidePopups();
@@ -209,7 +213,6 @@ function generateItems() {
   const itemsDiv = document.getElementById("items");
   itemsDiv.innerHTML = '';
 
-  // always 9 items
   const shuffled = [...allItems].sort(() => Math.random() - 0.5);
   shownItems = shuffled.slice(0, 9);
 
@@ -220,8 +223,7 @@ function generateItems() {
     itemsDiv.appendChild(div);
   });
 
-  // show items for 1.5s only
-  setTimeout(() => { askQuestion(); }, 1500);
+  setTimeout(() => { askQuestion(); }, 3000);
 }
 
 function askQuestion() {
@@ -229,54 +231,59 @@ function askQuestion() {
   const choicesDiv = document.getElementById("choices");
   choicesDiv.innerHTML = '';
 
-  // pick correct
   const correctItem = shownItems[Math.floor(Math.random() * shownItems.length)];
-
-  // pick 3 wrong
   const wrongItems = allItems.filter(i => !shownItems.includes(i));
   const shuffledWrongs = wrongItems.sort(() => Math.random() - 0.5).slice(0, 3);
-
-  // combine and shuffle
   const options = [correctItem, ...shuffledWrongs].sort(() => Math.random() - 0.5);
 
   options.forEach(opt => {
     const div = document.createElement("div");
     div.className = 'item';
     div.innerHTML = `<img src="${opt}" alt="${opt}">`;
+
     div.onclick = () => {
       if (opt === correctItem) {
-        score++;
-        scoreEl.textContent = score;
-        showScreen("showScreen");
-        generateItems();
-      } else {
-        attempts--; // ❌ lose a life
-        attemptsEl.textContent = attempts;
-        if (attempts <= 0) {
-          endGame(); // ✅ game over only when attempts = 0
-        } else {
+        div.style.background = "lightgreen"; 
+        setTimeout(() => {
+          score++;
+          scoreEl.textContent = score;
           showScreen("showScreen");
           generateItems();
-        }
+        }, 800);
+      } else {
+        div.style.background = "lightcoral"; 
+        setTimeout(() => {
+          attempts--; 
+          attemptsEl.textContent = attempts;
+          if (attempts <= 0) {
+            endGame();
+          } else {
+            showScreen("showScreen");
+            generateItems();
+          }
+        }, 800);
       }
     };
+
     choicesDiv.appendChild(div);
   });
 }
 
 function endGame() {
   finalScore.textContent = score;
-  let best = localStorage.getItem("memoryHighScore") || 0;
+  let best = parseInt(localStorage.getItem("memoryHighScore")) || 0;
+
   if (score > best) {
     localStorage.setItem("memoryHighScore", score);
     best = score;
   }
-  finalHighScore.textContent = best;
 
-  // Identify the game (1,2,3)
+  finalHighScore.textContent = best;
+  highScoreText.textContent = best; // ✅ Update HUD high score too
+
   window.parent.postMessage({ 
     type: "highscore", 
-    game: 1,  // ← change per child (1, 2, 3)
+    game: 1,  
     highscore: best 
   }, "*");
 
@@ -285,31 +292,56 @@ function endGame() {
   document.getElementById('overlay').classList.remove('hidden');
 }
 
+
+
+  
+
+  
+
+
+
 function resetGame() {
   if (retries >= maxRetries) {
+    // this retry is the second & final
     alert("No retries left!");
-    document.getElementById('endScreen').classList.add('hidden');
+document.getElementById("endScreen").classList.add("hidden");
+    retries++;
+    updateRetryLeft();
+    disableGame();
     return;
   }
-  retries++;
-  updateRetryLeft();
   document.getElementById("endScreen").classList.add("hidden");
   document.getElementById('overlay').classList.add('hidden');
-  score = 0;
-  attempts = 3; // ✅ reset lives on retry
-  attemptsEl.textContent = attempts;
-  scoreEl.textContent = score;
-  showScreen("showScreen");
-  generateItems();
+  startGame();
+
+  retries++;
+  updateRetryLeft();
 }
 
-const retryLeftEls = document.getElementsByClassName('retry-left');
 
 function updateRetryLeft() {
-  Array.from(retryLeftEls).forEach(el => {
-    el.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
-  });
+    // total retries display = maxRetries - 1 (first play doesn't reduce display)
+    let displayTotal = maxRetries - 1;
+
+    // display retries: first play doesn't reduce display, but clamp to 0 minimum
+    let displayRetries = Math.max(0, displayTotal - Math.max(0, retries - 1));
+
+    // update all elements in retryLeftEls
+    Array.from(retryLeftEls).forEach(el => {
+        el.textContent = `Retries left: ${displayRetries}/${displayTotal}`;
+    });
+
+    // save current retries
+    localStorage.setItem("memoryRetries", retries);
 }
+
+
+
+function disableGame() {
+  gameContainer.style.pointerEvents = "none";
+  gameContainer.style.opacity = "0.5";
+}
+
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -326,11 +358,6 @@ function showTutorial(){
   document.getElementById('overlay').classList.remove('hidden');
 }
 
-function closeTutorial(){
-  document.getElementById("tutorialPopup").classList.add("hidden");
-  document.getElementById('overlay').classList.add('hidden');
-}
-
 function hidePopups(){
   document.getElementById("endScreen").classList.add("hidden");
   document.getElementById("tutorialPopup").classList.add("hidden");
@@ -339,11 +366,18 @@ function hidePopups(){
 
 updateHighScore();
 
-window.onload=()=>{ 
+window.onload = () => { 
+  const savedRetries = parseInt(localStorage.getItem("memoryRetries"));
+  if (!isNaN(savedRetries)) {
+    retries = savedRetries;
+  }
+  if (retries >= maxRetries) disableGame();
   showTutorial();
   updateRetryLeft();
 };
+
 </script>
+
 
 </body>
 </html>
