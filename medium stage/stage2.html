@@ -46,7 +46,7 @@ src="game2.html" class="responsive-iframe"></iframe>
 
 <!-- PAGE 4 (Game 3 iframe) -->
 <div class="page" id="page4">
-  <iframe src="game3.html" class="game-frame"></iframe>
+  <iframe style="display: flex !important;height: 630px;" src="game3.html" class="game-frame"></iframe>
   <div class="bottom-buttons">
       <button onclick="goToPage(3)">⬅ Back</button>
   </div>
@@ -62,7 +62,7 @@ src="game2.html" class="responsive-iframe"></iframe>
 <script>
 
 /* ---------- Global Countdown ---------- */
-const deadline = new Date('2025-09-19T23:59:59');
+const deadline = new Date('2025-09-20T23:59:59');
 window.onload = () => setInterval(countdown, 1000);
 
 function countdown() {
