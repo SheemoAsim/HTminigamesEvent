@@ -291,7 +291,20 @@ let panelOpen = false;
 const BIN_ID = "68b9033e43b1c97be9361901"; 
 const MASTER_KEY = "$2a$10$XAafnqqDZKqfO6aTPmu4Juk04Z5hK65GP.X2ARIYG5dBTJiCAtG0y"; 
 const MAX_PLAYERS_SHOWN = 99;
-let players = JSON.parse(localStorage.getItem("players")) || {};
+let players = {};  // start empty
+
+// ✅ First try JSONBin
+loadFromJSONBin().then(() => {
+  // If JSONBin is empty or failed, fallback to localStorage
+  if (Object.keys(players).length === 0) {
+    const local = JSON.parse(localStorage.getItem("players")) || {};
+    players = local;
+    Object.keys(players).forEach(computePlayer);
+    renderAll();
+    console.log("📥 Loaded from localStorage (fallback).");
+  }
+});
+
 
 // ------------------- Game constants -------------------
 const HS_MIN = 0;       // minimum highscore
@@ -423,29 +436,42 @@ let total = 0;
 
 
 // ------------------- Add / update submission -------------------
-function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
-  if(!ign) return {ok:false, msg:'IGN required'};
+async function addSubmission(ign, stage, g1, g2, g3, id = null, source = 'url') {
+  if (!ign) return { ok: false, msg: 'IGN required' };
   ign = String(ign).trim();
   stage = Number(stage);
-  if(!([1,2,3].includes(stage))) return {ok:false, msg:'Stage must be 1,2,3'};
+  if (![1, 2, 3].includes(stage)) return { ok: false, msg: 'Stage must be 1,2,3' };
 
-  const raw = { g1:Number(g1)||0, g2:Number(g2)||0, g3:Number(g3)||0 };
-  players[ign] = players[ign] || { ign, id:id||("ID-"+Math.floor(Math.random()*9999)), stages:{}, final:{} };
+  const raw = { g1: Number(g1) || 0, g2: Number(g2) || 0, g3: Number(g3) || 0 };
+  players[ign] = players[ign] || { 
+    ign, 
+    id: id || ("ID-" + Math.floor(Math.random() * 9999)), 
+    stages: {}, 
+    final: {} 
+  };
 
-  if(players[ign].stages[stage] && players[ign].stages[stage].raw){
-    players[ign].stages[stage] = { invalidated:true, invalidReason:'duplicate', submittedAt: Date.now() };
-    players[ign].final = { ready:false, score:null };
-    saveToJSONBin();
+  // ✅ Handle duplicate submissions
+  if (players[ign].stages[stage] && players[ign].stages[stage].raw) {
+    players[ign].stages[stage] = { 
+      invalidated: true, 
+      invalidReason: 'duplicate', 
+      submittedAt: Date.now() 
+    };
+    players[ign].final = { ready: false, score: null };
+
     computePlayer(ign);
-    saveToJSONBin();
-    return {ok:false, msg:'Duplicate submission detected → stage invalidated'};
+    await saveToJSONBin();  // ✅ wait until save is done
+    return { ok: false, msg: 'Duplicate submission detected → stage invalidated' };
   }
 
-  players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated:false, source };
+  // ✅ Normal submission
+  players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated: false, source };
   computePlayer(ign);
-  saveToJSONBin();
-  return {ok:true, msg:'Submission accepted.'};
+
+  await saveToJSONBin(); // ✅ ensure save finishes before returning
+  return { ok: true, msg: 'Submission accepted.' };
 }
+
 
 
 ////4
@@ -508,23 +534,21 @@ let allPlayers = Object.values(players);
 // Save always as an array
 async function saveToJSONBin(){
   try {
-console.log("🔄 Saving to JSONBin...", players); // DEBUG
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method:"PUT",
-      headers:{
-        "Content-Type":"application/json",
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
         "X-Master-Key": MASTER_KEY
       },
       body: JSON.stringify({ rankings: Object.values(players) })
- // save as array
     });
+    const result = await response.json();
+    console.log("✅ JSONBin save response:", result);
+
+    // ✅ keep a backup locally too
+    localStorage.setItem("players", JSON.stringify(players));
   } catch(err){
-    console.error(err);
-    // ✅ Go back to the last 
-
-
-
-
+    console.error("❌ Save failed:", err);
   }
 }
 
@@ -535,18 +559,22 @@ async function loadFromJSONBin(){
       headers:{ "X-Master-Key": MASTER_KEY }
     });
     const data = await res.json();
-    const list = data.record.rankings || [];
+    console.log("📥 JSONBin loaded data:", data);
 
+    const list = data.record.rankings || [];
     players = {};
-    list.forEach(p=>{
-      players[p.ign] = p;
-    });
+    list.forEach(p => { players[p.ign] = p; });
+
+    // ✅ Recompute totals
     Object.keys(players).forEach(computePlayer);
+
     renderAll();
+    console.log("✅ Players loaded from JSONBin.");
   } catch(err){
-    console.error("Failed loading JSONBin", err);
+    console.error("❌ Failed loading JSONBin", err);
   }
 }
+
 
 ///5/////
 
