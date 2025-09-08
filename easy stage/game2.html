@@ -36,7 +36,7 @@
 <p>2- Each click flips a tile to the next piece. </p>
   <p>3-Try to complete the puzzle as fast as possible! ⏱️</p>
   <p>Good luck, and have fun! 🎉</p>
-  <button id="start-btn-2" onclick="startGame2()">▶ Play</button>
+  <button id="start-btn-2" onclick="resetGame2()">▶ Play</button>
 </div>
 
 
@@ -62,7 +62,44 @@ let moves2 = 0, seconds2 = 0, timerId2 = null;
 let sequences2 = [], positions2 = [];
 let bestTime2 = null;
 let game2Retries = 0;
-const game2MaxRetries = 5;
+const game2MaxRetries = 4;
+
+
+/* ✅ Load retries from localStorage */
+function loadGame2Retries() {
+  let saved = localStorage.getItem("game2Retries");
+  if (saved !== null) {
+    game2Retries = parseInt(saved, 10);
+  } else {
+    game2Retries = 0;
+    localStorage.setItem("game2Retries", 0);
+  }
+
+  if (game2Retries >= game2MaxRetries) {
+    disableGame2();
+
+  }
+}
+
+/* ✅ Save retries to localStorage */
+function saveGame2Retries() {
+  localStorage.setItem("game2Retries", game2Retries);
+}
+
+/* ✅ Disable game completely */
+function disableGame2() {
+  document.querySelector(".game-container").style.pointerEvents = "none";
+  document.querySelector(".game-container").style.opacity = "0.4";
+
+  document.getElementById("tutorial-2").style.display = "none";
+  document.getElementById("overlay").style.display = "none";
+  document.getElementById("end-popup-2").style.display = "none";
+
+  // Stop all timers and interactions
+  stopGame2Functions();
+}
+
+
 
 /* Helpers */
 function formatTime(sec){
@@ -198,23 +235,31 @@ function checkWin2() {
 function resetGame2() {
   if (game2Retries >= game2MaxRetries) {
     alert("No retries left!");
-    document.getElementById("end-popup-2").style.display="none"; // close popup if open
+    disableGame2();
     return;
   }
   game2Retries++;
+  saveGame2Retries();
   updateGame2RetryLeft();
   startGame2();
 }
 
 /* Update retry counter display */
+/* Update retry counter display */
 function updateGame2RetryLeft(){
-  const retryLeftText = `Retries left: ${game2MaxRetries - game2Retries}/${game2MaxRetries}`;
+  const displayTotal = game2MaxRetries - 1; // 4-1=3
+  // subtract retries only after the first play
+  const displayRetries = displayTotal - Math.max(0, game2Retries - 1);
+
+  const retryLeftText = `Retries left: ${displayRetries}/${displayTotal}`;
   document.getElementById("retryLeft2").textContent = retryLeftText;
   document.querySelector("#end-popup-2 #retryLeft2").textContent = retryLeftText;
 }
 
+
 /* Show tutorial at load */
 window.onload=()=>{ 
+  loadGame2Retries();
   document.getElementById("tutorial-2").style.display="block"; 
   updateGame2RetryLeft();
 };
