@@ -14,21 +14,20 @@
     display: flex; flex-direction: column; align-items: center;
     background: transparent;
     color: #fff; text-align: center;
-
   }
 
   h1 { margin: 8px 0 12px; font-size: 2rem; text-shadow: 0 2px 6px rgba(0,0,0,0.2); }
   #hud { 
-  display:flex;  
-  gap:15px; font-size:1.1em; padding:0; 
-background:rgba(255,255,255,0.08); 
-  border-radius:10px; width:350px; height: 30px; margin:0 ; 
- justify-content: center;
-align-items:center;
-}
+    display:flex;  
+    gap:15px; font-size:1.1em; padding:0; 
+    background:rgba(255,255,255,0.08); 
+    border-radius:10px; width:350px; height: 30px; margin:0 ; 
+    justify-content: center;
+    align-items:center;
+  }
 
   #gameContainer {
-margin-top:10px;
+    margin-top:10px;
     width: 340px; height: 200px;
     display: flex; gap: 2px;
     border-radius: 14px; overflow: hidden; position: relative;
@@ -50,20 +49,22 @@ margin-top:10px;
     max-width: 100px;
     max-height: 100px;
     object-fit: contain;
-
   }
 
   button { background:#6E0010; margin-top:25px; padding:12px 35px; font-size:1.2em; border-radius:12px; font-weight:bold; color:white; cursor:pointer; }
 
-
-#stopBtn {
+  #stopBtn {
     margin-top: 16px; padding: 12px 28px; font-weight: 800;
     border: 0; border-radius: 12px; cursor: pointer;
     background: #fff; color: #1c1c1c; box-shadow: 0 6px 16px rgba(0,0,0,0.2);
     transition: transform .08s ease, background .2s ease;
   }
   button#stopBtn:active { transform: translateY(1px) scale(0.98); }
-  button#stopBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+  button#stopBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 
   #overlay, #tutorialPopup {
     position: fixed; inset: 0;
@@ -89,7 +90,7 @@ margin-top:10px;
 <div id="hud">
   🏆 High Score: <span id="liveHighScore">0</span> |
   Score: <span id="score">0</span> |
-Lives: <span id="attempts">3</span> 
+  Lives: <span id="attempts">3</span> 
 </div>
 
 <div id="gameContainer" aria-live="polite">
@@ -98,18 +99,17 @@ Lives: <span id="attempts">3</span>
 </div>
 
 <button id="stopBtn" onclick="stopMatch()">🛑 Stop</button>
-<button style= "background: transparent; font-size: 1.2em; border: none; margin-top: 10px;"onclick="resetGame()">🔄</button>
- <div class="retry-left"></div>
+
+<button style="background: transparent; font-size: 1.2em; border: none; margin-top: 10px;" onclick="resetGame()">🔄</button>
+<div class="retry-left"></div>
 
 <div id="overlay">
   <div class="popup">
     <h2>🏁 Game Over</h2>
     <p>✅ Your Score: <span id="finalScore">0</span></p>
     <p>🏆 High Score: <span id="highScore">0</span></p>
-
-
     <button onclick="resetGame()">Play Again</button>
- <div class="retry-left"style="color: grey !important;" ></div>
+    <div class="retry-left" style="color: grey !important;"></div>
   </div>
 </div>
 
@@ -120,17 +120,18 @@ Lives: <span id="attempts">3</span>
     <p>1- Icons will shuffle quickly on both sides.</p>
     <p>2- Press <strong>STOP</strong> when the two icons form a matching pair.<br>
        Example: 🐄 Cow & 🥛 Milk.</p>
-      <p>3- Sometimes <strong style="color: #ff69b4;">Boby</strong> pair appears (<span style="color: #ff69b4;">Bonus round +10 points</span>).</p>
-      <p>Good luck, and have fun! 🎉</p>
-    <button onclick="startGame()">▶️ Play</button>
+    <p>3- Sometimes <strong style="color: #ff69b4;">Boby</strong> pair appears (<span style="color: #ff69b4;">Bonus round +10 points</span>).</p>
+    <p>Good luck, and have fun! 🎉</p>
+    <button onclick="resetGame()">▶️ Play</button>
   </div>
 </div>
+
 
 
 <script>
 let attempts = 3, score = 0;
 let retries = 0;
-const maxRetries = 1;
+const maxRetries = 2; // first play + 1 retry
 
 let gameOver = false;
 let speed = 400; 
@@ -138,6 +139,7 @@ let intervalId;
 let feedbackTimeout;
 let currentPair = null;
 let previousPair = null;
+let roundActive = false;
 
 const leftEl = document.getElementById('leftHalf');
 const rightEl = document.getElementById('rightHalf');
@@ -148,17 +150,80 @@ const overlay = document.getElementById('overlay');
 const finalScoreEl = document.getElementById('finalScore');
 const highScoreEl = document.getElementById('highScore');
 const liveHighScoreEl = document.getElementById('liveHighScore');
-// ❌ removed retryLeft / retryLeftEnd (they don’t exist in HTML)
 const tutorialPopup = document.getElementById('tutorialPopup');
+const gameContainer = document.getElementById('gameContainer');
 
 const retryLeftEls = document.getElementsByClassName('retry-left');
 
+window.onload = () => {
+  const savedRetries = parseInt(localStorage.getItem("memoryRetries"));
+  if (!isNaN(savedRetries)) retries = savedRetries;
+
+  const savedHighScore = parseInt(localStorage.getItem("memoryHighScore")) || 0;
+  highScoreEl.textContent = savedHighScore;
+  liveHighScoreEl.textContent = savedHighScore;
+
+  updateRetryLeft();
+
+  if (retries >= maxRetries) {
+    disableGame(); // ✅ fully disable game if retries hit 0
+  } else {
+    showTutorial(); // only show tutorial if player can play
+  }
+};
+
+
+
 function updateRetryLeft() {
-  Array.from(retryLeftEls).forEach(el => {
-    el.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
-  });
+    // total retries display = maxRetries - 1 (first play doesn't reduce display)
+    let displayTotal = maxRetries - 1;
+
+    // display retries: first play doesn't reduce display, but clamp to 0 minimum
+    let displayRetries = Math.max(0, displayTotal - Math.max(0, retries - 1));
+
+    // update all elements in retryLeftEls
+    Array.from(retryLeftEls).forEach(el => {
+        el.textContent = `Retries left: ${displayRetries}/${displayTotal}`;
+    });
+
+    // save current retries
+    localStorage.setItem("memoryRetries", retries);
 }
 
+
+
+
+// Update high score display
+function updateHighScore() {
+  const best = parseInt(localStorage.getItem('memoryHighScore')) || 0;
+  highScoreEl.textContent = best;
+  liveHighScoreEl.textContent = best;
+}
+
+// Disable game when no retries left
+function disableGame() {
+  gameContainer.style.pointerEvents = "none";
+  gameContainer.style.opacity = "1";
+
+
+}
+
+// Reset or retry the game
+function resetGame() {
+  if (retries >= maxRetries) {
+    alert("No retries left!");
+    overlay.style.display = 'none';
+    disableGame();
+    return;
+  }
+startGame()
+
+  retries++;
+  localStorage.setItem("memoryRetries", retries); // ✅ Save immediately
+  updateRetryLeft();
+}
+
+// Match pairs & bonus icons
 const matchPairs = [
   "Small_Bomb.png:Super_Bomb.png",
   "Cherry.png:Cherry_pie.png",
@@ -172,10 +237,7 @@ const matchPairs = [
   "Gold_Ore.png:Gold_Ingot2.png",
   "Peacock2.png:Peacock_Feather2.png"
 ];
-
 const bonusIcons = ["bonus1.png"];
-
-
 const allImages = matchPairs.flatMap(pair => pair.split(":"));
 
 function randomIcon() {
@@ -185,9 +247,7 @@ function randomIcon() {
 function updateHUD() {
   attemptsEl.textContent = attempts;
   scoreEl.textContent = score;
-  const best = localStorage.getItem('snapMatchHigh') || 0;
-  liveHighScoreEl.textContent = best;
-  updateRetryLeft(); // ✅ always update retries
+  updateRetryLeft();
 }
 
 function startGame() {
@@ -196,63 +256,54 @@ function startGame() {
   attempts = 3;
   score = 0;
   gameOver = false;
-  stopBtn.disabled = false;
+  stopBtn.disabled = true;
   updateHUD();
   startCycling();
 }
 
 function startCycling() {
   if (intervalId) clearInterval(intervalId);
+  generateNextPair();
+  intervalId = setInterval(generateNextPair, speed);
+}
 
-  intervalId = setInterval(() => {
-    previousPair = currentPair;
-
-    // 🎲 10% chance to show the special bonus icon on BOTH sides
-    if (Math.random() < 0.1) {
-      const bonusImg = bonusIcons[Math.floor(Math.random() * bonusIcons.length)];
-      leftEl.innerHTML  = `<img src="${bonusImg}" data-img="${bonusImg}">`;
-      rightEl.innerHTML = `<img src="${bonusImg}" data-img="${bonusImg}">`;
-      currentPair = { left: bonusImg, right: bonusImg, bonus: true };
-      return; // skip normal generation this tick
-    }
-
-    // 🔁 Normal cycling (unchanged logic)
+function generateNextPair() {
+  previousPair = currentPair;
+  if (Math.random() < 0.1) {
+    const bonusImg = bonusIcons[Math.floor(Math.random() * bonusIcons.length)];
+    leftEl.innerHTML  = `<img src="${bonusImg}" data-img="${bonusImg}">`;
+    rightEl.innerHTML = `<img src="${bonusImg}" data-img="${bonusImg}">`;
+    currentPair = { left: bonusImg, right: bonusImg, bonus: true };
+  } else {
     const pairIndex = Math.floor(Math.random() * matchPairs.length);
     const pair = matchPairs[pairIndex].split(":");
     let leftImg = pair[0], rightImg;
-
     if (Math.random() < 0.3) {
       rightImg = pair[1];
     } else {
       do { rightImg = randomIcon(); } while (pair.includes(rightImg));
     }
-
     leftEl.innerHTML  = `<img src="${leftImg}" data-img="${leftImg}">`;
     rightEl.innerHTML = `<img src="${rightImg}" data-img="${rightImg}">`;
     currentPair = { left: leftImg, right: rightImg, bonus: false };
-  }, speed);
+  }
+  roundActive = true;
+  stopBtn.disabled = false;
 }
 
-
 function stopMatch() {
-  if (gameOver) return;
-
+  if (gameOver || !roundActive) return;
   clearInterval(intervalId);
   stopBtn.disabled = true;
+  roundActive = false;
   clearTimeout(feedbackTimeout);
-
   const pairToEvaluate = previousPair || currentPair;
   const leftSrc  = pairToEvaluate.left;
   const rightSrc = pairToEvaluate.right;
-
-  // Freeze what the player stopped on
   leftEl.innerHTML  = `<img src="${leftSrc}" data-img="${leftSrc}">`;
   rightEl.innerHTML = `<img src="${rightSrc}" data-img="${rightSrc}">`;
 
-  // ✅ Bonus if we’re on a bonus tick AND both sides identical
   const isBonus = !!(pairToEvaluate.bonus && leftSrc === rightSrc);
-
-  // ✅ Normal match (only if not bonus)
   let isMatch = false;
   if (!isBonus) {
     isMatch = matchPairs.some(pair => {
@@ -262,8 +313,8 @@ function stopMatch() {
   }
 
   if (isBonus) {
-    leftEl.style.background = rightEl.style.background = "rgba(255,182,193,0.5)"; // pink glow
-    score += 10; // 🎁 Bonus +10
+    leftEl.style.background = rightEl.style.background = "rgba(255,182,193,0.5)";
+    score += 10;
   } else if (isMatch) {
     leftEl.style.background = rightEl.style.background = "rgba(0,255,0,0.3)";
     score++;
@@ -276,12 +327,8 @@ function stopMatch() {
 
   feedbackTimeout = setTimeout(() => {
     leftEl.style.background = rightEl.style.background = "rgba(255,255,255,0.08)";
-    if (attempts <= 0) {
-      endGame();
-    } else {
-      stopBtn.disabled = false;
-      startCycling();
-    }
+    if (attempts <= 0) endGame();
+    else startCycling();
   }, 500);
 }
 
@@ -289,45 +336,47 @@ function endGame() {
   gameOver = true;
   stopBtn.disabled = true;
   finalScoreEl.textContent = score;
-  let best = parseInt(localStorage.getItem('snapMatchHigh') || '0', 10);
+
+  let best = parseInt(localStorage.getItem('memoryHighScore') || '0', 10);
   if (score > best) {
     best = score;
-    localStorage.setItem('snapMatchHigh', score);
+    localStorage.setItem('memoryHighScore', score);
   }
+
   highScoreEl.textContent = best;
+  liveHighScoreEl.textContent = best;
 
-  window.parent.postMessage({ 
-    type: "highscore", 
-    game: 2, 
-    highscore: best 
-  }, "*");
+  // ✅ Always send the stored best
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: "highscore",
+      game: "2",
+      highscore: best
+    }, "*");
+  }
 
-  updateRetryLeft(); // ✅ show retries correctly at end
+  updateRetryLeft();
   overlay.style.display = 'flex';
 }
 
-function resetGame() {
-  if (retries >= maxRetries) {
-    alert("No retries left!");
-    overlay.style.display = 'none';
-    return;
-  }
-  retries++;
-  attempts = 3;
-  score = 0;
-  gameOver = false;
-  overlay.style.display = 'none';
-  stopBtn.disabled = false;
-  updateHUD(); // ✅ refresh retries after reset
-  startCycling();
+
+
+function showTutorial() {
+  tutorialPopup.style.display = 'flex';
 }
 
-tutorialPopup.style.display = 'flex';
-updateHUD();
+// On load
+const savedHighScore = parseInt(localStorage.getItem("memoryHighScore")) || 0;
+highScoreEl.textContent = savedHighScore;
+liveHighScoreEl.textContent = savedHighScore;
 
-window.onload=()=>{ 
-  updateRetryLeft();
-};
+// Update high score display
+function updateHighScore() {
+  const best = parseInt(localStorage.getItem('memoryHighScore')) || 0;
+  highScoreEl.textContent = best;
+  liveHighScoreEl.textContent = best;
+}
+
 </script>
 
 
