@@ -443,6 +443,8 @@ async function addSubmission(ign, stage, g1, g2, g3, id = null, source = 'url') 
   if (![1, 2, 3].includes(stage)) return { ok: false, msg: 'Stage must be 1,2,3' };
 
   const raw = { g1: Number(g1) || 0, g2: Number(g2) || 0, g3: Number(g3) || 0 };
+
+  // ✅ Ensure player exists, but keep old stages intact
   players[ign] = players[ign] || { 
     ign, 
     id: id || ("ID-" + Math.floor(Math.random() * 9999)), 
@@ -450,27 +452,18 @@ async function addSubmission(ign, stage, g1, g2, g3, id = null, source = 'url') 
     final: {} 
   };
 
-  // ✅ Handle duplicate submissions
-  if (players[ign].stages[stage] && players[ign].stages[stage].raw) {
-    players[ign].stages[stage] = { 
-      invalidated: true, 
-      invalidReason: 'duplicate', 
-      submittedAt: Date.now() 
-    };
-    players[ign].final = { ready: false, score: null };
-
-    computePlayer(ign);
-    await saveToJSONBin();  // ✅ wait until save is done
-    return { ok: false, msg: 'Duplicate submission detected → stage invalidated' };
-  }
-
-  // ✅ Normal submission
+  // ✅ Add or update only the current stage
   players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated: false, source };
+
+  // Recompute final score based on all stages
   computePlayer(ign);
 
-  await saveToJSONBin(); // ✅ ensure save finishes before returning
+  // Save to JSONBin and localStorage
+  await saveToJSONBin();
+
   return { ok: true, msg: 'Submission accepted.' };
 }
+
 
 
 
