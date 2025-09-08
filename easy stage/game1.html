@@ -20,7 +20,7 @@
   <p>2- Don't miss target and don't click other icons (-1pts) .</p>
   <p>3-Avoid bombs (-5pts) And click <strong style="color: #ff69b4;">Boby</strong> (<span style="color: #ff69b4;">Bonus +10 points</span>).</p>
 <p>Good luck, and have fun! 🎉</p>
-<button id="startBtn"  onclick="closeTutorial()">▶️ Play</button>
+<button id="startBtn"  onclick="resetGame()">▶️ Play</button>
 
 </div>
 
@@ -94,8 +94,9 @@ let glitchRate = 0.02;
 let spawnIntervalId;
 let gameRunning = false;
 let highScore = 0;
-let retries = 0;
-const maxRetries = 5;
+// ✅ Load retries from localStorage or start with 0
+let retries = parseInt(localStorage.getItem("gameRetries")) || 0;
+const maxRetries = 4;
 
 
 const folder = '1/';
@@ -111,21 +112,41 @@ const icons = [
 ].map(icon => folder + icon);
 
 
+// ✅ Save retries into localStorage
+function saveRetries() {
+  localStorage.setItem("gameRetries", retries);
+}
+
+// ✅ Disable everything when retries finished
+function disableGame() {
+  gameArea.innerHTML = "";
+  gameArea.style.pointerEvents = "none";
+  tutorial.style.display = "none";
+  overlay.style.display = "none";
+  endScreen.style.display = "none";
+  document.getElementById("retry").disabled = true;
+  retryLeftEl.textContent = "No retries left ❌";
+  retryLeftEl2.textContent = "No retries left ❌";
+}
+
+
 // ✅ Reset Game (Retry buttons, consumes retry)
 function resetGame() {
   if (retries >= maxRetries) {
     alert("No retries left!");
+    disableGame();
     return;
   }
+document.getElementById('tutorial').classList.add('hidden');
+document.getElementById('overlay').classList.add('hidden');
   retries++;
+  saveRetries();
   updateRetryLeft();
   
-  // Clear all intervals
   clearInterval(gameLoop);
   clearInterval(difficultyLoop);
   clearInterval(timer);
   
-  // Clear any pending timeouts
   const highestTimeoutId = setTimeout(() => {}, 0);
   for (let i = 0; i < highestTimeoutId; i++) {
     clearTimeout(i);
@@ -135,18 +156,16 @@ function resetGame() {
   startGame();
 }
 
+
 function updateRetryLeft() {
-  retryLeftEl.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
-  retryLeftEl2.textContent = `Retries left: ${maxRetries-retries}/${maxRetries}`;
+  let displayTotal = maxRetries - 1;  // 4-1 = 3
+  let displayRetries = displayTotal - Math.max(0, retries - 1); // first play doesn't reduce display
+  retryLeftEl.textContent = `Retries left: ${displayRetries}/${displayTotal}`;
+  retryLeftEl2.textContent = `Retries left: ${displayRetries}/${displayTotal}`;
 }
 
 
-function closeTutorial(){
-    document.getElementById('tutorial').classList.add('hidden');
-document.getElementById('overlay').classList.add('hidden');
-   
-startGame();
-}
+
 
 function startGame() {
   score = 0;
@@ -491,9 +510,13 @@ function startEndSet() {
 }
 
 
-window.onload=()=>{ 
+// ✅ On page load, check retries
+window.onload = () => {
   document.getElementById("tutorial").style.display="block"; 
-    updateRetryLeft();
+  updateRetryLeft();
+  if (retries >= maxRetries) {
+    disableGame();
+  }
 };
 
 
