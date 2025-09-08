@@ -226,6 +226,28 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+/* ---------- Persistent Iframes Controller ---------- */
+function persistIframes() {
+  const iframes = document.querySelectorAll(".game-frame");
+
+  iframes.forEach((iframe, index) => {
+    const storageKey = `iframe${index+1}Src`;
+
+    // ✅ Restore saved src on page load
+    const savedSrc = localStorage.getItem(storageKey);
+    if (savedSrc) {
+      iframe.src = savedSrc;
+    }
+
+    // ✅ Save current src whenever iframe loads (or changes)
+    iframe.addEventListener("load", () => {
+      localStorage.setItem(storageKey, iframe.src);
+    });
+  });
+}
+
+// ✅ Initialize on DOMContentLoaded
+window.addEventListener("DOMContentLoaded", persistIframes);
 
 
 </script>
