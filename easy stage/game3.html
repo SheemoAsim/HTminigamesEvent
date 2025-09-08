@@ -63,7 +63,7 @@
   <p>3-You have 30 seconds for each question.</p>
 <p>Good luck, and have fun! 🎉</p>
       <div style="display:flex; gap:8px; justify-content:center;">
-          <button class="close" onclick="startGame3()">▶️ Play</button>
+          <button class="close" onclick="resetGame3()">▶️ Play</button>
 
 
 
@@ -88,7 +88,12 @@
   </div>
 </div>
 
+<!-- Developer Reset Button -->
+
+
 <script>
+
+
 const game3Questions = [
   { emoji: "🌊🧜‍♂️😒", options: ["Fisher", "Sam", "Glen Cruz", "Chris Ford"], answer: "Fisher" },
   { emoji: "🧗‍♂️💵🧑‍🦳", options: ["John Gray", "Duke Evans", "Chris Ford", "Adam Ford"], answer: "Chris Ford" },
@@ -103,7 +108,7 @@ let game3Score = 0;
 let game3Timer = null;
 let game3TimeLeft = 30;
 let game3Retries = 0;
-const game3MaxRetries = 1;
+const game3MaxRetries = 2;
 let game3HighScore = 0;
 
 /* Elements */
@@ -120,11 +125,31 @@ const game3FinalHighElem = document.getElementById("finalHigh3");
 
 
 function updateGame3RetryLeft() {
+  // Save retries to localStorage
+  localStorage.setItem("game3Retries", game3Retries);
+
+  const displayTotal = game3MaxRetries - 1; // 2-1 = 1
+  const displayRetries = displayTotal - Math.max(0, game3Retries - 1); // don't decrease until first retry
+
+  // Update all retry display elements
   const retryLeftElems = document.getElementsByClassName('retry-left');
   Array.from(retryLeftElems).forEach(el => {
-    el.textContent = `Retry Left: ${Math.max(game3MaxRetries - game3Retries, 0)}/1`;
+    el.textContent = `Retry Left: ${displayRetries}/${displayTotal}`;
   });
+
+  // Disable game if retries reach max
+  if (game3Retries >= game3MaxRetries) {
+    game3QuestionElem.style.display = "none";
+    game3OptionsElem.style.display = "none";
+    document.getElementById("tutorial3").style.display = "none";
+    document.getElementById('overlay').classList.remove('hidden');
+  } else {
+    game3QuestionElem.style.display = "block";
+    game3OptionsElem.style.display = "block";
+    document.getElementById('overlay').classList.add('hidden');
+  }
 }
+
 
 
 
@@ -299,11 +324,20 @@ document.getElementById('overlay').classList.add('hidden');
 
 
 /* Show tutorial at load */
-window.onload=()=>{ 
-  document.getElementById("tutorial3").style.display="block"; 
-updateGame3RetryLeft();
-    
+window.onload = () => { 
+  // Show tutorial
+  document.getElementById("tutorial3").style.display = "block"; 
+
+  // Load retries from localStorage
+  const savedRetries = parseInt(localStorage.getItem("game3Retries"));
+  if (!isNaN(savedRetries)) {
+    game3Retries = savedRetries;
+  }
+
+  // Update retry display and disable game if needed
+  updateGame3RetryLeft();
 };
+
 </script>
 </body>
 </html>
