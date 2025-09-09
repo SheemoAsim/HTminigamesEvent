@@ -165,7 +165,6 @@ function updateRetryLeft() {
 }
 
 
-/////
 
 
 function startGame() {
@@ -175,8 +174,7 @@ function startGame() {
   scoreEl.textContent = score;
   timerSeconds.textContent = `${timeLeft}s`;
   gameArea.innerHTML = '';
-endScreen.style.display="none";
-  
+  endScreen.style.display="none";
 
 
 
@@ -239,18 +237,26 @@ batchInterval = setInterval(() => {
     gameLoop = startGameLoop();
   }, 2000);
 
-// Schedule end set to start near the final seconds
-setTimeout(() => {
-  startEndSet();
-}, 112000); // start after 90s (or adjust when normal sets finish)
 
 
+
+  let bonusStarted = false;
+
+  // ✅ Main timer
   timer = setInterval(() => {
     timeLeft--;
-    timerBar.style.width = (timeLeft/120*100)+'%';
+    timerBar.style.width = (timeLeft / 120 * 100) + '%';
     timerSeconds.textContent = `${timeLeft}s`;
-    if(timeLeft<=0) endGame();
-  },1000);
+
+    // ✅ Trigger bonus phase in last 10 seconds
+    if (!bonusStarted && timeLeft <= 10) {
+      bonusStarted = true;
+      startEndSet();
+    }
+
+    // ✅ End game
+    if (timeLeft <= 0) endGame();
+  }, 1000);
 }
 
 
@@ -509,34 +515,6 @@ function startEndSet() {
 
   spawnEndIcons();
 }
-
-//////
-
-
-
-function endGame(){
-  clearInterval(gameLoop); clearInterval(difficultyLoop); clearInterval(timer);
-  gameArea.innerHTML = ''; // Remove remaining icons immediately
-endScreen.style.display="block";
-  document.getElementById('overlay').style.display = "block";
-finalScoreEl.textContent = score;
-
-  if (score > highScore) {
-    highScore = score;
-    localStorage.setItem("gameHighScore", highScore);
-    highScoreEl.textContent = highScore;
-  }
-  finalHighScoreEl.textContent = highScore;
-
-  // Identify the game (1,2,3)
-  window.parent.postMessage({ 
-    type: "highscore", 
-    game: 1,  // ← change per child (1, 2, 3)
-    highscore: highScore 
-  }, "*");
-}
-
-
 
 
 // ✅ On page load, check retries
