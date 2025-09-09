@@ -285,7 +285,7 @@ footer{grid-column:1/-1;color:var(--muted);font-size:13px;margin-top:10px;text-a
 const settingsIcon = document.getElementById("settings-icon");
 const settingsPanel = document.getElementById("settings-panel");
 const adminActions = document.getElementById("admin-actions");
-const ADMIN_PASSWORD = "1234"; // change to your password
+const ADMIN_PASSWORD = "2272001"; // change to your password
 let panelOpen = false;
 
 const BIN_ID = "68b9033e43b1c97be9361901"; 
@@ -304,29 +304,7 @@ const MULTS = { 1: 1.0, 2: 1.25, 3: 1.5 }; // difficulty multipliers
 
 
 
-///exampels
 
-// Example players (for testing only)
-players["Alice"] = {
-  ign:"Alice",
-  id: "2335",   // add player ID
-  stages:{
-    1:{ raw:{g1:400,g2:5,g3:5}, submittedAt:Date.now() },
-    2:{ raw:{g1:350,g2:10,g3:420}, submittedAt:Date.now() },
-    3:{ raw:{g1:480,g2:460,g3:490}, submittedAt:Date.now() }
-  },
-  final:{}
-};
-players["Bob"] = {
-  ign:"Bob",
-  id: "B001",   // add player ID
-  stages:{
-    1:{ raw:{g1:320,g2:8,g3:4}, submittedAt:Date.now() },
-    2:{ raw:{g1:290,g2:15,g3:370}, submittedAt:Date.now() },
-    3:{ raw:{g1:410,g2:400,g3:420}, submittedAt:Date.now() }
-  },
-  final:{}
-};
 
 // Compute and render immediately
 Object.keys(players).forEach(k => computePlayer(k));
