@@ -8,7 +8,7 @@
   margin: 0;
   font-family: 'Poppins', sans-serif;
   text-align: center;
-  background: red;
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -466,6 +466,24 @@ window.onload = () => {
     retries = savedRetries ? parseInt(savedRetries) : 0;
     updateRetryLeft();
 };
+
+// ✅ Wait until everything is fully loaded (images, CSS, scripts, etc.)
+function waitForFullPageLoad(callback) {
+  if (document.readyState === "complete") {
+    // Already loaded
+    callback();
+  } else {
+    window.addEventListener("load", () => {
+      callback();
+    });
+  }
+}
+
+// Example usage
+waitForFullPageLoad(() => {
+  console.log("✅ All elements fully loaded, now start game logic...");
+  // startGame();  // <-- call your game init function here
+});
 
 </script>
 </body>
