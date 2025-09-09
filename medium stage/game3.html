@@ -317,6 +317,25 @@ window.onload = () => {
 
 highScoreText.textContent = parseInt(localStorage.getItem("findDiffHighScore")) || 0;
 
+
+// ✅ Wait until everything is fully loaded (images, CSS, scripts, etc.)
+function waitForFullPageLoad(callback) {
+  if (document.readyState === "complete") {
+    // Already loaded
+    callback();
+  } else {
+    window.addEventListener("load", () => {
+      callback();
+    });
+  }
+}
+
+// Example usage
+waitForFullPageLoad(() => {
+  console.log("✅ All elements fully loaded, now start game logic...");
+  // startGame();  // <-- call your game init function here
+});
+
   </script>
 </body>
 </html>
