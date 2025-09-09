@@ -165,6 +165,7 @@ function updateRetryLeft() {
 }
 
 
+/////
 
 
 function startGame() {
@@ -508,6 +509,34 @@ function startEndSet() {
 
   spawnEndIcons();
 }
+
+//////
+
+
+
+function endGame(){
+  clearInterval(gameLoop); clearInterval(difficultyLoop); clearInterval(timer);
+  gameArea.innerHTML = ''; // Remove remaining icons immediately
+endScreen.style.display="block";
+  document.getElementById('overlay').style.display = "block";
+finalScoreEl.textContent = score;
+
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("gameHighScore", highScore);
+    highScoreEl.textContent = highScore;
+  }
+  finalHighScoreEl.textContent = highScore;
+
+  // Identify the game (1,2,3)
+  window.parent.postMessage({ 
+    type: "highscore", 
+    game: 1,  // ← change per child (1, 2, 3)
+    highscore: highScore 
+  }, "*");
+}
+
+
 
 
 // ✅ On page load, check retries
