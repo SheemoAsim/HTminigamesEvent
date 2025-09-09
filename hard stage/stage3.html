@@ -264,55 +264,91 @@ window.addEventListener("DOMContentLoaded", persistAllIframes);
 
 // Wait for all iframes and images to load fully
 // Wait for all iframes and images to load fully (no errors shown)
-function waitForAllElements(timeoutPerResource = 5000) {
-  const images = Array.from(document.images);
+function waitForAllImagesDynamic(timeoutPerResource = 5000) {
+  const loaderText = document.getElementById("loading-text");
   const iframes = Array.from(document.querySelectorAll("iframe"));
-  const resources = [...images, ...iframes];
-  const total = resources.length;
-  let loaded = 0;
+  const parentImages = Array.from(document.images);
 
+  let resources = [...parentImages]; // start with parent images
+  let loadedCount = 0;
+
+  // Update loader progress
   const updateProgress = () => {
-    loaded++;
-    let percent = Math.round((loaded / total) * 100);
-    if (percent > 100) percent = 100;
-
-    const textEl = document.getElementById("loading-text");
-    if (textEl) textEl.textContent = `Loading... ${percent}%`;
+    loadedCount++;
+    const percent = Math.min(Math.round((loadedCount / resources.length) * 100), 100);
+    if (loaderText) loaderText.textContent = `Loading... ${percent}%`;
   };
 
-  if (total === 0) {
-    const textEl = document.getElementById("loading-text");
-    if (textEl) textEl.textContent = `Loading... 100%`;
-    return Promise.resolve();
-  }
+  // Track a single image
+  const trackImage = (img) => {
+    if (!img) return;
+    if (img.complete) {
+      updateProgress();
+    } else {
+      img.addEventListener("load", updateProgress);
+      img.addEventListener("error", updateProgress);
+      setTimeout(updateProgress, timeoutPerResource); // fallback
+    }
+  };
 
-  const promises = resources.map((res) => {
-    return new Promise(resolve => {
-      let done = false;
-      const finish = () => {
-        if (!done) {
-          done = true;
-          updateProgress();
-          resolve();
-        }
-      };
+  // Track all current resources
+  resources.forEach(trackImage);
 
-      if (res.tagName === "IMG" && res.complete) {
-        return finish();
-      }
-
-      res.onload = () => finish();
-      res.onerror = () => finish();
-
-      setTimeout(finish, timeoutPerResource);
+  // Observe dynamically added images in parent
+  const observeNewImages = (root) => {
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.tagName === "IMG") {
+            resources.push(node);
+            trackImage(node);
+          } else if (node.querySelectorAll) {
+            node.querySelectorAll("img").forEach(img => {
+              resources.push(img);
+              trackImage(img);
+            });
+          }
+        });
+      });
     });
+    observer.observe(root, { childList: true, subtree: true });
+    return observer;
+  };
+
+  // Start observing parent page
+  observeNewImages(document.body);
+
+  // Track images inside same-origin iframes
+  iframes.forEach(iframe => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      if (!doc) return;
+
+      // Track existing images
+      Array.from(doc.images).forEach(trackImage);
+
+      // Observe dynamically added images inside iframe
+      observeNewImages(doc.body);
+
+    } catch(e) {
+      console.warn("Cannot access iframe (cross-origin):", iframe.src);
+    }
   });
 
-  return Promise.all(promises);
+  // Return promise resolved when all current resources loaded
+  return new Promise(resolve => {
+    const checkInterval = setInterval(() => {
+      if (loadedCount >= resources.length) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 100);
+  });
 }
 
+// Call this on window load
 window.addEventListener("load", () => {
-  waitForAllElements().then(() => {
+  waitForAllImagesDynamic().then(() => {
     setTimeout(() => {
       const loader = document.getElementById("loading-screen");
       if (loader) {
@@ -321,6 +357,7 @@ window.addEventListener("load", () => {
         setTimeout(() => loader.remove(), 500);
       }
       document.body.style.overflow = "auto";
+      console.log("✅ All parent and iframe images (dynamic too) are fully loaded!");
     }, 500);
   });
 });
