@@ -7,6 +7,13 @@
 <link href="style.css" rel="stylesheet">
 </head>
 <body>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <p id="loading-text">Loading... 0%</p>
+</div>
+
 <div id="timer-overlay" style="left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.5); color: white; padding: 5px; text-align: center; font-size: 12px; z-index: 1000;">
   This stage will be closed down in <span id="endcountdown"></span>
 </div>
@@ -54,7 +61,7 @@
 <script>
 
 /* ---------- Global Countdown ---------- */
-const deadline = new Date('2025-09-14T23:59:59');
+const deadline = new Date('2025-09-17T23:59:59');
 window.onload = () => setInterval(countdown, 1000);
 
 function countdown() {
@@ -161,13 +168,11 @@ if (!navigator.onLine) {
   setTimeout(() => {
     const rankingLink = document.getElementById("ranking-link");
     if (rankingLink) {
-      rankingLink.addEventListener("click", () => {
-window.location.href = "HT minigames Results.html";
-
+            rankingLink.addEventListener("click", () => {
+        window.location.href = "HT minigames Results.html";
       });
     }
   }, 200);
-
   
      
 
@@ -226,8 +231,141 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+/* ---------- Persistent Iframes Controller ---------- */
 
 
+
+// Wait for all iframes and images to load fully (no errors shown)
+function waitForAllImagesDynamic(timeoutPerResource = 5000) {
+  const loaderText = document.getElementById("loading-text");
+  const iframes = Array.from(document.querySelectorAll("iframe"));
+  const parentImages = Array.from(document.images);
+
+  let resources = [...parentImages]; // start with parent images
+  let loadedCount = 0;
+
+  // Update loader progress
+  const updateProgress = () => {
+    loadedCount++;
+    const percent = Math.min(Math.round((loadedCount / resources.length) * 100), 100);
+    if (loaderText) loaderText.textContent = `Loading... ${percent}%`;
+  };
+
+  // Track a single image
+  const trackImage = (img) => {
+    if (!img) return;
+    if (img.complete) {
+      updateProgress();
+    } else {
+      img.addEventListener("load", updateProgress);
+      img.addEventListener("error", updateProgress);
+      setTimeout(updateProgress, timeoutPerResource); // fallback
+    }
+  };
+
+  // Track all current resources
+  resources.forEach(trackImage);
+
+  // Observe dynamically added images in parent
+  const observeNewImages = (root) => {
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.tagName === "IMG") {
+            resources.push(node);
+            trackImage(node);
+          } else if (node.querySelectorAll) {
+            node.querySelectorAll("img").forEach(img => {
+              resources.push(img);
+              trackImage(img);
+            });
+          }
+        });
+      });
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    return observer;
+  };
+
+  // Start observing parent page
+  observeNewImages(document.body);
+
+  // Track images inside same-origin iframes
+  iframes.forEach(iframe => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      if (!doc) return;
+
+      // Track existing images
+      Array.from(doc.images).forEach(trackImage);
+
+      // Observe dynamically added images inside iframe
+      observeNewImages(doc.body);
+
+    } catch(e) {
+      console.warn("Cannot access iframe (cross-origin):", iframe.src);
+    }
+  });
+
+  // Return promise resolved when all current resources loaded
+  return new Promise(resolve => {
+    const checkInterval = setInterval(() => {
+      if (loadedCount >= resources.length) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 100);
+  });
+}
+
+// Call this on window load
+window.addEventListener("load", () => {
+  waitForAllImagesDynamic().then(() => {
+    setTimeout(() => {
+      const loader = document.getElementById("loading-screen");
+      if (loader) {
+        loader.style.transition = "opacity 0.5s ease";
+        loader.style.opacity = "0";
+        setTimeout(() => loader.remove(), 500);
+      }
+      document.body.style.overflow = "auto";
+      console.log("✅ All parent and iframe images (dynamic too) are fully loaded!");
+    }, 500);
+  });
+});
+
+document.body.style.overflow = "hidden";
+
+
+
+
+
+
+function persistIframesStage1() {
+  const iframes = document.querySelectorAll(".game-frame, .responsive-iframe");
+  const stage = 1; // Force Stage 1 for this page
+
+  iframes.forEach((iframe, index) => {
+    const pageId = iframe.closest(".page")?.id || `pageUnknown`;
+    const storageKey = `stage${stage}_${pageId}_iframe${index+1}`;
+
+    // ✅ Restore saved src for Stage 1 only
+    const savedSrc = localStorage.getItem(storageKey);
+    if (savedSrc) iframe.src = savedSrc;
+
+    // ✅ Save current src whenever iframe loads
+    iframe.addEventListener("load", () => {
+      try {
+        localStorage.setItem(storageKey, iframe.src);
+      } catch (e) {
+        console.warn("⚠ Cannot save iframe src (cross-origin)", e);
+      }
+    });
+  });
+}
+
+// Initialize on DOMContentLoaded
+window.addEventListener("DOMContentLoaded", persistIframesStage1);
 </script>
 </body>
 </html>
