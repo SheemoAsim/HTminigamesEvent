@@ -436,15 +436,17 @@ let total = 0;
 
 
 // ------------------- Add / update submission -------------------
-function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
+function addSubmission(ign, stage, g1, g2, g3, id=null, source='url') {
   if(!ign) return {ok:false, msg:'IGN required'};
   ign = String(ign).trim();
   stage = Number(stage);
   if(!([1,2,3].includes(stage))) return {ok:false, msg:'Stage must be 1,2,3'};
 
+  // Merge existing player if exists
   if(!players[ign]) players[ign] = { stages:{} };
+  if(!players[ign].stages) players[ign].stages = {};
 
-  // ✅ make sure each stage stays separate
+  // Update only this stage
   players[ign].stages[stage] = {
     raw: { g1:Number(g1)||0, g2:Number(g2)||0, g3:Number(g3)||0 },
     submittedBy: id,
@@ -452,8 +454,15 @@ function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
     submittedAt: Date.now()
   };
 
-  // ✅ recompute scores after saving
+  // Save player ID if not yet present
+  if(id) players[ign].id = id;
+
+  // Recompute scores after saving
   computePlayer(ign);
+
+  // Save to local storage immediately (and optionally JSONBin)
+  localStorage.setItem("players", JSON.stringify(players));
+  saveToJSONBin();
 
   return {ok:true, msg:'Submission saved'};
 }
