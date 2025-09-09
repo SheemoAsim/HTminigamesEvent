@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HT Mini-Games — Results & Ranking</title>
+<style>
+/* Your original styles kept as-is */
+:root{
+    --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#60a5fa;
+    --gold:#ffd700; --silver:#c0c0c0; --copper:#b87333;
+    --range-6-10:#60f0d6; --range-11-15:#bdb2ff;
+    --white:#fff;
+    --glass: rgba(255,255,255,0.04);
+}
+*{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+body{margin: 15px;background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,0.06), transparent 6%),
+    radial-gradient(900px 400px at 90% 90%, rgba(96,165,250,0.03), transparent 6%),
+    var(--bg); color:var(--white); min-height:100vh}
+.container{width:100%;margin:30px 0 30px auto;display:fixed;gap:18px}
+header{display:flex;align-items:center;gap:20px;margin-bottom:30px}
+header h1{margin-bottom: 10px;margin-top: 0; font-size:20px;letter-spacing:0.5px; color: #7823BA;line-height: 1;}
+.sub{color:var(--muted);font-size:14px; margin:0;}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), var(--glass));border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);width: 100%;}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px;border-radius:8px;color:var(--white);cursor:pointer}
+.btn.ghost{background:transparent}
+.mini{font-size:12px;color:var(--muted)}
+.rank-list{max-height:420px;overflow:auto;padding:0}
+.rank-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;margin-bottom:4px;flex-direction:row;cursor:pointer;position:relative; border-bottom: 1px solid rgba(255,255,255,0.05);}
+
+.rank-pos{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800 }
+.r-1 .rank-pos{background:var(--gold);color:#111}
+.r-2 .rank-pos{background:var(--silver);color:#111}
+.r-3 .rank-pos{background:var(--copper);color:#111}
+.r-4-5 .rank-pos {background:#8be58e;color:#042d10;}
+.r-6-10 .rank-pos{border:2px solid var(--range-6-10);color:var(--range-6-10);background:transparent}
+.rank-normal .rank-pos{background:rgba(255,255,255,0.03);color:var(--muted)}
+.rank-player{flex:1;display:flex;justify-content:space-between;align-items:center;width:100%}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+}
+
+.rank-pos {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  margin-right: 10px;
+}
+
+.rank-player {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stage-details {
+  position: relative;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent);
+  display: none;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  width: 100%;
+}
+
+.stage-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stage-details td {
+  padding: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rankings{padding:12px;border-radius:10px}
+.medals{display:flex;gap:10px;align-items:center;justify-content:space-around;padding:8px;height:auto;width:100%;}
+.medal{width:88px;height:88px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#061426}
+.medal h3{margin:6px 0 0 0;font-weight:900}
+.gold{background:linear-gradient(180deg,#fff1b8,var(--gold));color:#111}
+.silver{background:linear-gradient(180deg,#f3f4f6,var(--silver));color:#111}
+.copper{background:linear-gradient(180deg,#ffe5d6,var(--copper));color:#111}
+footer{grid-column:1/-1;color:var(--muted);font-size:13px;margin-top:10px;text-align:center}
+.stage-details.hidden{height:0;opacity:0;padding:0;margin:0;}
+
+
+.medals {
+  display: flex;
+  gap: 2px; /* Increase the gap between medals */
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  height: auto;
+  width: 100%;
+  color: white;
+  text-align: center;
+}
+
+.medal {
+  width: 80px; /* Increase the size of the medal */
+  height: 80px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.medal h3 {
+  margin: 6px 0 0 0;
+  font-weight: 900;
+  font-size: 20px; /* Increase the font size */
+  color: white;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Add a black transparent shadow under the text */
+}
+
+.medal div {
+  font-size: 30px; /* Increase the font size of the trophy symbol */
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Add a black transparent shadow under the trophy symbol */
+}
+
+.gold {
+  background: linear-gradient(180deg, #fff1b8, var(--gold));
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.silver {
+  background: linear-gradient(180deg, #f3f4f6, var(--silver));
+  box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.copper {
+  background: linear-gradient(180deg, #ffe5d6, var(--copper));
+  box-shadow: 0 0 10px rgba(184, 115, 51, 0.5);
+}
+
+
+
+
+
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:center;align-items:center;">
+  <img src="HTMG.png" alt="image-description" style="width:210px;height:200px;">
+</div>
+
+<div class="container">
+<header>
+  <h1>HT Mini-Games — Results & Ranking</h1>
+  <div class="sub">Public view for all players' results & rankings: Top 3 Players and the 99 rankings. Mini games results, stages scores and the final result all showing here and updated automatically.</div>
+</header>
+
+<aside class="sidebar">
+  <div class="card rankings">
+    <strong style="color:white;">Top Medals</strong>
+    <div class="medals" style="display:flex;justify-content:center;align-items:center;">
+      <div style="display:flex;flex-direction:column;align-items:center;margin:0 20px;">
+        <div class="medal silver" style="width:90px;height:90px;font-size:18px;">
+          <div style="font-size:32px">🥈</div>
+          <h3 style="font-size:18px" id="m2">—</h3>
+        </div>
+        <span style="font-size:14px">2nd</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;margin:0 20px;">
+        <div class="medal gold" style="width:110px;height:110px;font-size:24px;">
+          <div style="font-size:36px">🥇</div>
+          <h3 id="m1">—</h3>
+        </div>
+        <span style="font-size:16px">1st</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;margin:0 20px;">
+        <div class="medal copper" style="width:82px;height:82px;font-size:18px;">
+          <div style="font-size:28px">🥉</div>
+          <h3 style="font-size:16px" id="m3">—</h3>
+        </div>
+        <span style="font-size:12px">3rd</span>
+      </div>
+    </div>
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04);margin:8px 0" />
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="color:white">Ranking (top 99)</strong>
+  <div class="mini">Total participations: <span id="total-players">0</span></div>
+      <div class="mini">Auto-updates</div>
+    </div>
+    <div class="rank-list card" id="rank-list"></div>
+  </div>
+</aside>
+</div>
+
+<footer style="position:relative;bottom:0;">HT mini games results & ranking.
+<div id="calculation-approach-panel" style="display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;background:var(--bg);padding:20px;border:1px solid rgba(255,255,255,0.03);border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.2);z-index: 10;">
+<h2 style="margin-top:0;">Calculation Approach</h2>
+<p>Each stage contributes equally. Final = Average of all stages (with difficulty multipliers).</p>
+<ul>
+  <li><strong>Stage 1:</strong> (Game1 Score(0-500pts)% + Game2 Least Time(0-20min)% + Game3 Right answer(0/6-6/6)%) / 3 × 1.0</li>
+  <li><strong>Stage 2:</strong> (Game1 Score(0-500pts)% + Game2 Least Time(0-40min)% + Game3 Score(0-500pts)%) / 3 × 1.25</li>
+  <li><strong>Stage 3:</strong> (Game3 Score(0-500pts)% + Game3 Score(0-500pts)% + Game3 Score(0-500pts)%) / 3 × 1.5</li>
+</ul>
+<p><em>Example:</em> Stage1=80%, Stage2=90%, Stage3=85% → Final = (80+90+85)/3 = 85%</p>
+</div>
+
+<div id="settings-icon" style="
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1;
+
+">⚙️</div>
+
+<!-- Sliding settings panel -->
+<div id="settings-panel" style="
+    position: fixed;
+    bottom: 70px;
+    left: -300px; /* start hidden */
+    width: 280px;
+    background: rgba(15,23,36,0.95);
+    border: 1px solid rgba(96,165,250,0.4);
+    border-radius: 12px;
+    padding: 15px;
+    z-index: 1001;
+    transition: left 0.4s ease;
+">
+  <h3 style="margin-top:0; color:white;">Admin Settings</h3>
+  <div id="admin-actions" style="display:none;">
+    <button class="btn" onclick="deleteAllPlayers()">Delete All</button>
+    <br/><br/>
+    <input id="delete-ign" placeholder="Enter IGN" style="width:100%;margin-bottom:5px;">
+    <input id="delete-id" placeholder="Enter ID" style="width:100%;margin-bottom:5px;">
+    <button class="btn" onclick="deletePlayer()">Delete Player</button>
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
+    <input id="edit-ign" placeholder="Enter IGN" style="width:100%;margin-bottom:5px;">
+    <select id="edit-field" style="width:100%;margin-bottom:5px;">
+      <option value="ign">IGN</option>
+      <option value="id">ID</option>
+      <option value="stages">Stages (JSON format)</option>
+      <option value="final">Final (JSON format)</option>
+    </select>
+    <input id="edit-value" placeholder="New value" style="width:100%;margin-bottom:5px;">
+    <button class="btn" onclick="editPlayer()">Edit Player</button>
+<hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
+<h4 style="color:white;margin:5px 0;">Add New Player</h4>
+<input id="add-ign" placeholder="Enter IGN" style="width:100%;margin-bottom:5px;">
+<input id="add-id" placeholder="Enter ID" style="width:100%;margin-bottom:5px;">
+<textarea id="add-stages" placeholder='Optional stages JSON, e.g. {"1":{"raw":{"g1":0,"g2":0,"g3":0}}}' style="width:100%;height:60px;margin-bottom:5px;"></textarea>
+<button class="btn" onclick="addPlayer()">Add Player</button>
+
+  </div>
+</div>
+
+</footer>
+<button id="calculation-approach-btn" style="position:relative;bottom:0;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px;border-radius:8px;color:var(--white);cursor:pointer;">Calculation Approach</button>
+
+
+<!-- Semi-hidden settings button -->
+<!-- Fixed settings button -->
+
+
+
+
+
+<script>
+const settingsIcon = document.getElementById("settings-icon");
+const settingsPanel = document.getElementById("settings-panel");
+const adminActions = document.getElementById("admin-actions");
+const ADMIN_PASSWORD = "2272001"; // change to your password
+let panelOpen = false;
+
+const BIN_ID = "68b9033e43b1c97be9361901"; 
+const MASTER_KEY = "$2a$10$XAafnqqDZKqfO6aTPmu4Juk04Z5hK65GP.X2ARIYG5dBTJiCAtG0y"; 
+const MAX_PLAYERS_SHOWN = 99;
+let players = {};  // start empty
+
+// ✅ First try JSONBin
+loadFromJSONBin().then(() => {
+  // If JSONBin is empty or failed, fallback to localStorage
+  if (Object.keys(players).length === 0) {
+    const local = JSON.parse(localStorage.getItem("players")) || {};
+    players = local;
+    Object.keys(players).forEach(computePlayer);
+    renderAll();
+    console.log("📥 Loaded from localStorage (fallback).");
+  }
+});
+
+
+// ------------------- Game constants -------------------
+const HS_MIN = 0;       // minimum highscore
+const HS_MAX = 500;     // maximum highscore
+const TIME_MIN = 0;     // minimum time
+const S1_MAX_TIME = 20; // Stage 1 max time in minutes
+const S2_MAX_TIME = 40; // Stage 2 max time in minutes
+const TOTAL_Q = 6;      // number of questions
+const MULTS = { 1: 1.0, 2: 1.25, 3: 1.5 }; // difficulty multipliers
+
+
+
+
+
+//1 Toggle Calculation Panel
+document.getElementById('calculation-approach-btn').addEventListener('click', function() {
+  var panel = document.getElementById('calculation-approach-panel');
+  panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+});
+
+
+///2
+function toggleDetails(event, index) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  const rankList = document.getElementById('rank-list');
+  const item = rankList.children[index];
+  const details = item.querySelector('.stage-details');
+  const button = item.querySelector('.btn.ghost');
+  const isVisible = details.style.display === 'block';
+
+  if (isVisible) {
+    // Close panel and restore original row
+    details.style.display = 'none';
+    details.style.flexBasis = '';
+    details.style.width = '';
+    item.style.flexWrap = ''; // back to default (no wrap)
+    button.style.display = 'block';
+  } else {
+    // Open panel full width under the row (same item)
+    item.style.flexWrap = 'wrap';      // allow next line
+    details.style.display = 'block';
+    details.style.flexBasis = '100%';  // take full line width
+    details.style.width = '100%';
+    button.style.display = 'none';
+  }
+}
+
+
+/////3 calculation approach
+
+// ------------------- Calculation functions -------------------
+function round(x){ return Math.round(x*100)/100; }
+
+function pct_highscore(value, min=HS_MIN, max=HS_MAX){
+  const v = Number(value);
+  if(isNaN(v)) return 0;
+  if(max <= min) return 0;
+  let res = ((v - min) / (max - min)) * 100;
+  if(res < 0) res = 0;
+  if(res > 100) res = 100;
+  return round(res);
+}
+
+function pct_time(value, maxTime){
+  const v = Number(value);
+  if(isNaN(v)) return 0;
+  let res = ((maxTime - v) / (maxTime - TIME_MIN)) * 100;
+  if(res < 0) res = 0;
+  if(res > 100) res = 100;
+  return round(res);
+}
+
+function pct_correct(value, total = TOTAL_Q){
+  const v = Number(value);
+  if(isNaN(v) || total <= 0) return 0;
+  let res = (v / total) * 100;
+  if(res < 0) res = 0;
+  if(res > 100) res = 100;
+  return round(res);
+}
+
+// Compute all stage scores and final for a player
+function computePlayer(ign){
+  const p = players[ign];
+  if(!p) return;
+
+  for(let s=1; s<=3; s++){
+    const st = p.stages[s];
+    if(st && st.invalidated){
+      st.stageScore = null;
+      st.stageFinal = null;
+      continue;
+    }
+    if(st && st.raw){
+      const raw = st.raw;
+      let g1p=0,g2p=0,g3p=0;
+      if(s===1){
+        g1p = pct_highscore(raw.g1);
+        g2p = (raw.g2 === 0) ? 0 : pct_time(raw.g2, S1_MAX_TIME); // force 0% if g2=0
+        g3p = pct_correct(raw.g3);
+      } else if(s===2){
+        g1p = pct_highscore(raw.g1);
+        g2p = (raw.g2 === 0) ? 0 : pct_time(raw.g2, S2_MAX_TIME); // force 0% if g2=0
+        g3p = pct_highscore(raw.g3);
+      } else {
+        g1p = pct_highscore(raw.g1);
+        g2p = pct_highscore(raw.g2);
+        g3p = pct_highscore(raw.g3);
+      }
+      st.percent = {g1p,g2p,g3p};
+      st.stageScore = round((g1p+g2p+g3p)/3);
+      st.stageFinal = round(st.stageScore * MULTS[s]);
+    }
+  }
+
+let total = 0;
+  for(let s=1; s<=3; s++){
+    const st = p.stages[s];
+    if(st && st.stageFinal!=null && !st.invalidated){
+      total += st.stageFinal;
+    } else {
+      total += 0; // missing stage counts as 0
+    }
+  }
+
+  // final = sum / 3
+  p.final = { score: round(total/3), ready: Object.keys(p.stages).length === 3, computedAt: Date.now() };
+}
+
+
+// ------------------- Add / update submission -------------------
+function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
+  if(!ign) return {ok:false, msg:'IGN required'};
+  ign = String(ign).trim();
+  stage = Number(stage);
+  if(!([1,2,3].includes(stage))) return {ok:false, msg:'Stage must be 1,2,3'};
+
+  if(!players[ign]) players[ign] = { stages:{} };
+
+  // ✅ make sure each stage stays separate
+  players[ign].stages[stage] = {
+    raw: { g1:Number(g1)||0, g2:Number(g2)||0, g3:Number(g3)||0 },
+    submittedBy: id,
+    source,
+    submittedAt: Date.now()
+  };
+
+  // ✅ recompute scores after saving
+  computePlayer(ign);
+
+  return {ok:true, msg:'Submission saved'};
+}
+
+
+
+
+
+////4
+function renderAll(){
+  const rankList = document.getElementById('rank-list');
+  rankList.innerHTML = '';
+  
+
+let allPlayers = Object.values(players);
+
+  // Sort by final score (highest first)
+ allPlayers.sort((a, b) => {
+    const aScore = a.final.ready ? a.final.score : Object.values(a.stages || {}).reduce((sum, st) => sum + (st.stageFinal || 0), 0);
+    const bScore = b.final.ready ? b.final.score : Object.values(b.stages || {}).reduce((sum, st) => sum + (st.stageFinal || 0), 0);
+    return bScore - aScore;
+  });
+
+
+  // 🆕 total participants
+  document.getElementById('total-players').innerText = allPlayers.length;
+
+  document.getElementById('m1').innerText = allPlayers[0] ? `${allPlayers[0].ign} (${allPlayers[0].final.score}%)` : '—';
+  document.getElementById('m2').innerText = allPlayers[1] ? `${allPlayers[1].ign} (${allPlayers[1].final.score}%)` : '—';
+  document.getElementById('m3').innerText = allPlayers[2] ? `${allPlayers[2].ign} (${allPlayers[2].final.score}%)` : '—';
+
+  for(let i=0; i<Math.min(allPlayers.length, MAX_PLAYERS_SHOWN); i++){
+    const r = allPlayers[i];
+    const div = document.createElement('div');
+    div.className = 'rank-item ' + (i<3 ? `r-${i+1}` : (i<5 ? 'r-4-5' : (i<10 ? 'r-6-10' : (i<15 ? 'r-11-15' : 'rank-normal'))));
+    
+    const pos = document.createElement('div'); pos.className='rank-pos'; pos.innerText=i+1;
+    const playerNode = document.createElement('div'); playerNode.className='rank-player';
+    playerNode.innerHTML = `<div><strong>${r.ign}</strong><div class="mini">ID: ${r.id||'-'} - Score: ${r.final.score}%</div></div>
+      <button class="btn ghost" onclick="toggleDetails(event, ${i})">Details</button>`;
+
+    const details = document.createElement('div'); details.className='stage-details';
+    let stageHtml = `<table>
+      <tr><td colspan="2"><strong>Player ID:</strong> ${r.id||'-'}</td></tr>`;
+    for(let s=1;s<=3;s++){
+      const st = r.stages[s]||{};
+      stageHtml += `<tr><td colspan="2"><strong>Stage ${s}</strong></td></tr>
+        <tr><td>Score</td><td>${st.stageScore||'-'}</td></tr>
+        <tr><td>G1</td><td>${st.raw ? st.raw.g1 : '-'}</td></tr>
+        <tr><td>G2</td><td>${st.raw ? st.raw.g2 : '-'}</td></tr>
+        <tr><td>G3</td><td>${st.raw ? st.raw.g3 : '-'}</td></tr>`;
+    }
+    stageHtml += `<tr><td colspan="2"><strong>Final Score:</strong> ${r.final.score||'-'}%</td></tr></table>`;
+    details.innerHTML = `<div class="card">${stageHtml}</div>`;
+    details.addEventListener('click',(ev)=>toggleDetails(ev,i));
+
+    div.appendChild(pos); div.appendChild(playerNode); div.appendChild(details);
+    rankList.appendChild(div);
+  }
+}
+
+
+////5 JSONBIN functions
+
+// ------------------- Save to JSONBin -------------------
+// Save always as an array
+async function saveToJSONBin(){
+  try {
+    const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": MASTER_KEY
+      },
+      body: JSON.stringify({ rankings: Object.values(players) })
+    });
+    const result = await response.json();
+    console.log("✅ JSONBin save response:", result);
+
+    // ✅ keep a backup locally too
+    localStorage.setItem("players", JSON.stringify(players));
+  } catch(err){
+    console.error("❌ Save failed:", err);
+  }
+}
+
+// Load and rebuild players object
+async function loadFromJSONBin(){
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers:{ "X-Master-Key": MASTER_KEY }
+    });
+    const data = await res.json();
+    console.log("📥 JSONBin loaded data:", data);
+
+    const list = data.record.rankings || [];
+    players = {};
+    list.forEach(p => { players[p.ign] = p; });
+
+    // ✅ Recompute totals
+    Object.keys(players).forEach(computePlayer);
+
+    renderAll();
+    console.log("✅ Players loaded from JSONBin.");
+  } catch(err){
+    console.error("❌ Failed loading JSONBin", err);
+  }
+}
+
+
+///5/////
+
+
+
+// Toggle panel slide
+settingsIcon.addEventListener("click", () => {
+  if(!panelOpen){
+    const pw = prompt("Enter admin password:");
+    if(pw === ADMIN_PASSWORD){
+      adminActions.style.display = "block";
+      settingsPanel.style.left = "10px"; // slide in
+      panelOpen = true;
+    } else {
+      alert("Incorrect password!");
+    }
+  } else {
+    settingsPanel.style.left = "-300px"; // slide out
+    panelOpen = false;
+  }
+});
+
+// Delete all players
+function deleteAllPlayers(){
+  if(confirm("Are you sure you want to delete ALL players?")){
+    players = {};
+    localStorage.setItem("players", JSON.stringify(players));
+    saveToJSONBin();
+    renderAll();
+    alert("All players deleted.");
+  }
+}
+
+// Delete specific player by IGN & ID
+function deletePlayer(){
+  const ign = document.getElementById("delete-ign").value.trim();
+  const id = document.getElementById("delete-id").value.trim();
+  if(!ign || !id){ alert("Enter IGN and ID."); return; }
+  if(players[ign] && players[ign].id === id){
+    delete players[ign];
+    localStorage.setItem("players", JSON.stringify(players));
+    saveToJSONBin();
+    renderAll();
+    alert(`Player ${ign} deleted.`);
+  } else alert("Player not found or ID mismatch.");
+}
+
+// Edit player
+function editPlayer(){
+  const ign = document.getElementById("edit-ign").value.trim();
+  const field = document.getElementById("edit-field").value.trim();
+  const value = document.getElementById("edit-value").value.trim();
+  if(!ign || !field || !value){ alert("Enter all fields."); return; }
+
+  if(players[ign]){
+    try{
+      if(field === "stages" || field === "final"){
+        players[ign][field] = JSON.parse(value); // accept JSON format for complex objects
+      } else {
+        players[ign][field] = value; // string for simple fields
+      }
+      computePlayer(ign);
+      localStorage.setItem("players", JSON.stringify(players));
+      saveToJSONBin();
+      renderAll();
+      alert(`Player ${ign} updated.`);
+    } catch(e){
+      alert("Invalid value format. For stages/final, enter valid JSON.");
+    }
+  } else alert("Player not found.");
+}
+
+
+
+
+
+// 6------------------- On page load -------------------
+window.addEventListener('DOMContentLoaded', async ()=>{
+  const stageResult = JSON.parse(localStorage.getItem("latestStageResult"));
+  if(stageResult){
+    addSubmission(
+      stageResult.ign, 
+      stageResult.stageNumber, 
+      stageResult.g1, 
+      stageResult.g2, 
+      stageResult.g3, 
+      stageResult.id
+    );
+    localStorage.removeItem("latestStageResult");
+  } else {
+    await loadFromJSONBin();
+    renderAll();
+  }
+});
+
+</script>
+</body>
+</html>
