@@ -7,13 +7,6 @@
 <link href="style.css" rel="stylesheet">
 </head>
 <body>
-
-<!-- Loading Screen -->
-<div id="loading-screen">
-  <div class="spinner"></div>
-  <p id="loading-text">Loading... 0%</p>
-</div>
-
 <div id="timer-overlay" style="left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.5); color: white; padding: 5px; text-align: center; font-size: 12px; z-index: 1000;">
   This stage will be closed down in <span id="endcountdown"></span>
 </div>
@@ -61,7 +54,7 @@
 <script>
 
 /* ---------- Global Countdown ---------- */
-const deadline = new Date('2025-09-17T23:59:59');
+const deadline = new Date('2025-09-14T23:59:59');
 window.onload = () => setInterval(countdown, 1000);
 
 function countdown() {
@@ -168,10 +161,10 @@ if (!navigator.onLine) {
   setTimeout(() => {
     const rankingLink = document.getElementById("ranking-link");
     if (rankingLink) {
-            rankingLink.addEventListener("click", () => {
-  window.location.href = "https://sheemoasim.github.io/HTminigamesEvent/HT%20minigames%20Results.html";
-});
+      rankingLink.addEventListener("click", () => {
+window.location.href = "HT minigames Results.html";
 
+      });
     }
   }, 200);
 
@@ -233,103 +226,8 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* ---------- Persistent Iframes Controller ---------- */
 
 
-
-// Wait for all iframes and images to load fully (no errors shown)
-function waitForAllElements(timeoutPerResource = 5000) {
-  const images = Array.from(document.images);
-  const iframes = Array.from(document.querySelectorAll("iframe"));
-  const resources = [...images, ...iframes];
-  const total = resources.length;
-  let loaded = 0;
-
-  const updateProgress = () => {
-    loaded++;
-    let percent = Math.round((loaded / total) * 100);
-    if (percent > 100) percent = 100;
-
-    const textEl = document.getElementById("loading-text");
-    if (textEl) textEl.textContent = `Loading... ${percent}%`;
-  };
-
-  if (total === 0) {
-    const textEl = document.getElementById("loading-text");
-    if (textEl) textEl.textContent = `Loading... 100%`;
-    return Promise.resolve();
-  }
-
-  const promises = resources.map((res) => {
-    return new Promise(resolve => {
-      let done = false;
-      const finish = () => {
-        if (!done) {
-          done = true;
-          updateProgress();
-          resolve();
-        }
-      };
-
-      if (res.tagName === "IMG" && res.complete) {
-        return finish();
-      }
-
-      res.onload = () => finish();
-      res.onerror = () => finish();
-
-      setTimeout(finish, timeoutPerResource);
-    });
-  });
-
-  return Promise.all(promises);
-}
-
-window.addEventListener("load", () => {
-  waitForAllElements().then(() => {
-    setTimeout(() => {
-      const loader = document.getElementById("loading-screen");
-      if (loader) {
-        loader.style.transition = "opacity 0.5s ease";
-        loader.style.opacity = "0";
-        setTimeout(() => loader.remove(), 500);
-      }
-      document.body.style.overflow = "auto";
-    }, 500);
-  });
-});
-
-document.body.style.overflow = "hidden";
-
-
-
-
-
-function persistIframesStage1() {
-  const iframes = document.querySelectorAll(".game-frame, .responsive-iframe");
-  const stage = 1; // Force Stage 1 for this page
-
-  iframes.forEach((iframe, index) => {
-    const pageId = iframe.closest(".page")?.id || `pageUnknown`;
-    const storageKey = `stage${stage}_${pageId}_iframe${index+1}`;
-
-    // ✅ Restore saved src for Stage 1 only
-    const savedSrc = localStorage.getItem(storageKey);
-    if (savedSrc) iframe.src = savedSrc;
-
-    // ✅ Save current src whenever iframe loads
-    iframe.addEventListener("load", () => {
-      try {
-        localStorage.setItem(storageKey, iframe.src);
-      } catch (e) {
-        console.warn("⚠ Cannot save iframe src (cross-origin)", e);
-      }
-    });
-  });
-}
-
-// Initialize on DOMContentLoaded
-window.addEventListener("DOMContentLoaded", persistIframesStage1);
 </script>
 </body>
 </html>
