@@ -8,7 +8,7 @@
   margin: 0;
   font-family: 'Poppins', sans-serif;
   text-align: center;
-  background: transparent;
+  background: red;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -269,14 +269,16 @@ let imageUrl;
 
 let bestTime = null;
 
-// ✅ Update Best Time
 function updateBestTime(timeInSeconds) {
+    if (timeInSeconds <= 0) return; // ignore invalid
+
     if (bestTime === null || timeInSeconds < bestTime) {
         bestTime = timeInSeconds;
-        localStorage.setItem("game3HighScore", bestTime);
+        localStorage.setItem("game3HighScore", String(timeInSeconds)); // save correctly
     }
+
     document.getElementById('best-time').textContent =
-        "Best Time: " + (bestTime === null ? "" : formatTime(bestTime)); // ✅ always shows N/A if null
+        "Best Time: " + (bestTime === null ? "N/A" : formatTime(bestTime));
 }
 
 
@@ -451,12 +453,13 @@ window.onload = () => {
     document.getElementById("tutorialPopup").style.display = "block";
 
     const savedBest = localStorage.getItem("game3HighScore");
-    if (savedBest && !isNaN(savedBest)) {
-        bestTime = parseInt(savedBest);
+
+    if (savedBest !== null && !isNaN(savedBest)) {
+        bestTime = Number(savedBest); // ✅ load correctly
         document.getElementById('best-time').textContent = "Best Time: " + formatTime(bestTime);
     } else {
         bestTime = null;
-        document.getElementById('best-time').textContent = "Best Time: "; // ✅ show N/A instead of disappearing
+        document.getElementById('best-time').textContent = "Best Time: N/A"; // ✅ show N/A for new players
     }
 
     const savedRetries = localStorage.getItem("game3Retries");
