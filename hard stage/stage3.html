@@ -32,7 +32,7 @@
 <!-- PAGE 2 (Game 1 iframe) -->
 <div class="page" id="page2">
 
-  <iframe style="display: flex !important;background: transparent;"src="1/game1.html" class="game-frame"></iframe>
+  <iframe style="display: flex !important;background: transparent;"data-src="1/game1.html" class="game-frame"></iframe>
   <div class="bottom-buttons">
       <button onclick="goToPage(1)">⬅ Back</button>
       <button onclick="goToPage(3)">Next ➡</button>
@@ -41,7 +41,7 @@
 
 <!-- PAGE 3 (Game 2 iframe) -->
 <div class="page" id="page3">
-    <iframe style="display: flex !important;height: 510px;"src="2/game2.html" class="game-frame"></iframe>
+    <iframe style="display: flex !important;height: 510px;"data-src="2/game2.html" class="game-frame"></iframe>
   <div class="bottom-buttons">
       <button onclick="goToPage(2)">⬅ Back</button>
       <button onclick="goToPage(4)">Next ➡</button>
@@ -51,7 +51,7 @@
 <!-- PAGE 4 (Game 3 iframe) -->
 <div class="page" id="page4">
 <h1 style="text-align: center;">Spot The Target</h1>
-  <iframe src="3/game3.html" class="game-frame"></iframe>
+  <iframe data-src="3/game3.html" class="game-frame"></iframe>
   <div class="bottom-buttons">
       <button onclick="goToPage(3)">⬅ Back</button>
   </div>
@@ -306,22 +306,14 @@ function preloadIframeAssets() {
 
   allImages.forEach(src => {
     const img = new Image();
-    img.decoding = "async";   // ✅ force decode async
-    img.loading = "eager";    // ✅ force load immediately
     img.src = "assets/" + src; // adjust path
     hiddenDiv.appendChild(img); // 👈 ensures waitForAllImagesDynamic sees it
-
-    // ✅ always mark it finished (loaded, error, or timeout)
-    img.onload = () => console.log("✅ Loaded:", src);
-    img.onerror = () => console.warn("❌ Failed:", src);
-    setTimeout(() => {
-      if (!img.complete) console.warn("⏳ Timeout forcing complete:", src);
-    }, 5000);
   });
 
   console.log("📦 Preloading", allImages.length, "iframe game assets (counted in loader)...");
 }
 window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+
 
 
 
