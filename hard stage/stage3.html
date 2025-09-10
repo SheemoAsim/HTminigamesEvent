@@ -262,6 +262,7 @@ window.addEventListener("DOMContentLoaded", persistAllIframes);
 
 
 // ✅ Preload all iframe game assets (Game1, Game2, Game3)
+// ✅ Preload all iframe game assets (Game1, Game2, Game3)
 function preloadIframeAssets() {
   // --- Game 1 Images ---
   const game1Items = [
@@ -299,15 +300,21 @@ function preloadIframeAssets() {
   // --- Combine all ---
   const allImages = [...game1Items, ...game2Items, ...game3Items];
 
-  // --- Preload ---
+  // --- Attach them to the loader system ---
+  const hiddenDiv = document.createElement("div");
+  hiddenDiv.style.display = "none";
+  document.body.appendChild(hiddenDiv);
+
   allImages.forEach(src => {
     const img = new Image();
-    img.src = "assets/" + src; // adjust base path to your assets
+    img.src = "assets/" + src; // adjust path
+    hiddenDiv.appendChild(img); // 👈 ensures waitForAllImagesDynamic sees it
   });
 
-  console.log("📦 Preloading", allImages.length, "iframe game assets...");
+  console.log("📦 Preloading", allImages.length, "iframe game assets (counted in loader)...");
 }
 window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+
 
 
 
