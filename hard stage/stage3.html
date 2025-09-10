@@ -261,8 +261,57 @@ window.addEventListener("DOMContentLoaded", persistAllIframes);
 
 
 
+// ✅ Preload all iframe game assets (Game1, Game2, Game3)
+function preloadIframeAssets() {
+  // --- Game 1 Images ---
+  const game1Items = [
+    "Rose.png","Milk.png","Corn.png","Cherry.png","Gold_Necklace.png","Collar.png",
+    "Meal_for_students.png","Ice_Cream.png","Yogurt.png","Peacock_Feather.png",
+    "Rural_Dog.png","Sapphire.png","ErSilver_Bucket.png","Darkgold_Ore.png","Bike.png",
+    "ErLimit_Pack.png","Cheese_Cake.png","ErKetchup_Chip.png","Small_Bomb.png",
+    "Ginseng.png","Tuna_sandwich.png","Gold_Ingot.png",
+  ];
 
-// Wait for all iframes and images to load fully
+  // --- Game 2 Images ---
+  const matchPairs = [
+    "Small_Bomb.png:Super_Bomb.png",
+    "Cherry.png:Cherry_pie.png",
+    "Chicken2.png:Chicken_Adult2.png",
+    "Jasmine.png:Jasmine_Tea2.png",
+    "Cotton_Cloth.png:Cotton.png",
+    "Milk2.png:Cow_Adult2.png",
+    "Peach.png:Peach_Juice.png",
+    "Duck_Adult2.png:Poultry_Feed_II2.png",
+    "ErKetchup_Chip.png:Potato2.png",
+    "Gold_Ore.png:Gold_Ingot2.png",
+    "Peacock2.png:Peacock_Feather2.png"
+  ];
+  const bonusIcons = ["bonus1.png"];
+  const game2Items = matchPairs.flatMap(p => p.split(":")).concat(bonusIcons);
+
+  // --- Game 3 Images ---
+  const game3Items = [];
+  for (let i = 0; i < 14; i++) {
+    const start = (i * 3) + 1;
+    game3Items.push(`${start}.png`, `${start+1}.png`, `${start+2}.png`);
+  }
+
+  // --- Combine all ---
+  const allImages = [...game1Items, ...game2Items, ...game3Items];
+
+  // --- Preload ---
+  allImages.forEach(src => {
+    const img = new Image();
+    img.src = "assets/" + src; // adjust base path to your assets
+  });
+
+  console.log("📦 Preloading", allImages.length, "iframe game assets...");
+}
+window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+
+
+
+
 // Wait for all iframes and images to load fully (no errors shown)
 function waitForAllImagesDynamic(timeoutPerResource = 5000) {
   const loaderText = document.getElementById("loading-text");
