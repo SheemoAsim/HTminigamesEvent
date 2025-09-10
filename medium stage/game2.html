@@ -269,6 +269,26 @@ let imageUrl;
 
 let bestTime = null;
 
+// ---------- Preload Images ----------
+function preloadGameImages(callback) {
+  let loadedCount = 0;
+  images.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    if (img.complete) checkDone();
+    else img.onload = img.onerror = checkDone;
+  });
+
+  function checkDone() {
+    loadedCount++;
+    if (loadedCount >= images.length) {
+      console.log("✅ Game 2 images preloaded!");
+      window.parent.postMessage("loaded", "*"); // notify parent
+      callback();
+    }
+  }
+}
+
 function updateBestTime(timeInSeconds) {
     if (timeInSeconds <= 0) return; // ignore invalid
 
