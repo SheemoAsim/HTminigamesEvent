@@ -415,6 +415,31 @@ startBtn.onclick = () => {
 
  show(tutorial);show(overlay);
 
+function preloadImages(sets) {
+    const allImages = sets.flat();
+    let loaded = 0;
+    return new Promise(resolve => {
+      allImages.forEach(src => {
+        const img = new Image();
+        img.src = src;
+        img.onload = img.onerror = () => {
+          loaded++;
+          if (loaded === allImages.length) resolve();
+        };
+      });
+    });
+  }
+
+  // ---------- Init ----------
+  updateRetryDisplay();
+  if (retries <= 0) disableGame();
+
+  preloadImages(SETS).then(() => {
+    window.parent.postMessage("loaded", "*"); // notify parent iframe
+    show(tutorial); show(overlay);
+  });
+
+
 })();
 
 </script>
