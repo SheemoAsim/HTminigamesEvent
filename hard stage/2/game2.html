@@ -240,6 +240,29 @@ const matchPairs = [
 const bonusIcons = ["bonus1.png"];
 const allImages = matchPairs.flatMap(pair => pair.split(":"));
 
+
+// ---------------- Preload all images ----------------
+function preloadGameImages(callback) {
+  let loadedCount = 0;
+  function checkDone() {
+    loadedCount++;
+    if (loadedCount >= allImages.length) {
+      console.log("✅ Game 2 images preloaded!");
+      window.parent.postMessage("loaded", "*"); // notify parent
+      callback();
+    }
+  }
+
+  allImages.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    if (img.complete) checkDone();
+    else img.onload = img.onerror = checkDone;
+  });
+}
+
+
+
 function randomIcon() {
   return allImages[Math.floor(Math.random() * allImages.length)];
 }
