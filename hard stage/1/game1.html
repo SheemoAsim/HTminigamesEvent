@@ -391,8 +391,10 @@ window.onload = () => {
     retries = savedRetries;
   }
   if (retries >= maxRetries) disableGame();
-  showTutorial();
-  updateRetryLeft();
+  preloadGameImages(() => {
+    showTutorial();
+    updateRetryLeft();
+  });
 };
 
 </script>
