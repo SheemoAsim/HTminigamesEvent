@@ -73,6 +73,37 @@ for (let i = 1; i <= 52; i += 2) {
   emojiPairs.push([`${folder}${i}.png`, `${folder}${i + 1}.png`]);
 }
 
+// Preload all game images for this iframe
+function preloadGameImages(callback) {
+  const images = [];
+  
+  // Emoji pairs
+  emojiPairs.forEach(pair => images.push(...pair));
+  
+  // Bonus images
+  images.push(`${folder}bonus1.png`, `${folder}bonus2.png`);
+  
+  let loadedCount = 0;
+  
+  function checkDone() {
+    loadedCount++;
+    if (loadedCount >= images.length) {
+      console.log("✅ Game 3 images preloaded!");
+      callback();
+    }
+  }
+  
+  images.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    if (img.complete) {
+      checkDone();
+    } else {
+      img.onload = img.onerror = checkDone;
+    }
+  });
+}
+
     const grid = document.getElementById('grid');
     const timerBar = document.getElementById("timerBar");
     const timerSeconds = document.getElementById("timerSeconds");
@@ -335,6 +366,23 @@ waitForFullPageLoad(() => {
   console.log("✅ All elements fully loaded, now start game logic...");
   // startGame();  // <-- call your game init function here
 });
+
+
+// ✅ Wait until the page is fully loaded, then preload images
+window.addEventListener("load", () => {
+  preloadGameImages(() => {
+    // Show tutorial or initialize game
+    showPopup("tutorialPopup");
+    generateGrid();
+    updateRetryLeft();
+    
+    if (retries >= maxRetries) {
+      disableGame();
+      hidePopup("tutorialPopup");
+    }
+  });
+});
+
 
   </script>
 </body>
