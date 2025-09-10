@@ -2,362 +2,416 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Crops Collector 🧑‍🌾</title>
-<link href="style.css" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🧠 Memory Test</title>
+
+<body style= "background: transparent;">
 <style>
-  /* ✅ Disabled grid style */
-  #gameGrid.disabled {
-    pointer-events: none;
-    opacity: 0.4;
-    filter: grayscale(80%);
+  * { box-sizing: border-box; font-family: 'Arial', sans-serif; }
+
+  body {
+    margin: 0;
+
+    color: #fff;
+    text-align: center;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
   }
+
+  h1 { margin-top: 10px; font-size: 1.8em; }
+
+  .screen { display: none; max-width: 500px; margin-top: 0; }
+  .active { display: block; }
+
+  button {
+    background: #fff; color: #764ba2;
+    padding: 12px 25px; margin: 10px;
+    font-size: 1em; border: none; border-radius: 10px;
+    cursor: pointer; transition: 0.3s;
+  }
+  button:hover { background: #f0f0f0; }
+
+  .item-grid, .choice-grid {
+    display: grid;
+    gap: 15px;
+    margin: 10px 0;
+  }
+
+  .item-grid { grid-template-columns: repeat(3, 1fr); }
+  .choice-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 20px;
+  }
+
+  .item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+  }
+ 
+  .item img {
+    max-width: 90%;
+    max-height: 100px;
+    object-fit: contain;
+  }
+
+  .choices img {
+    max-width: 80%;
+    max-height: 90px;
+    object-fit: contain;
+  }
+
+
+  .question { margin: 10px 0; font-size: 1.2em; }
+  .info { 
+  display:flex; justify-content:space-between; align-items:center; 
+  gap:10px; font-size:1.1em; padding:0; 
+width:300px; margin:0 ; 
+}
+
+  /* Popup */
+  #tutorialPopup, #endScreen {
+    width: min(90vw, 340px);
+    background: #fff; color: #333; border-radius: 14px;
+    padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    text-align: center;
+z-index:1000;
+  }
+
+  
+
+  #tutorialPopup button, #endScreen button {
+    font-size: 1em;
+    padding: 10px 20px;
+    margin-top: 15px;
+    background: #6E0010;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  #tutorialPopup button:hover, #endScreen button:hover { background: #5a379d; }
+
+.overlay {  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.6);
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  color:white; font-size:1.2em; padding:20px; text-align:center; z-index:400;}
+
+  .hidden { display: none !important; }
+
+.info { 
+  display:flex;  
+  gap:15px; font-size:1.1em; padding:0; 
+background:rgba(255,255,255,0.08); 
+  border-radius:10px; width:350px; height: 30px; margin:0 auto; 
+ justify-content: center;
+align-items:center;
+}
 </style>
 </head>
-<body style= "background: transparent;">
+<body>
 
-<div style="display: flex !important; padding: 20px; background: transparent;" class="page" id="page2">
+<h1 style= "margin-bottom:10px;">🧠 Items Memory Test</h1>
 
-<h1 style="font-size: 1.5em;">Farm Animals Orders 🌾</h1>
-
-<div class="score-info">
-  <div>🏆 High score: <span id="highScoreText">0</span></div> |
-  <div> Score: <span id="score">0</span></div>
-</div>
-
-<div id="gameGrid">
-  <div class="emojiBtn" data-id="0"><img src="1/1.png" alt="1"></div>
-  <div class="emojiBtn" data-id="1"><img src="1/2.png" alt="2"></div>
-  <div class="emojiBtn" data-id="2"><img src="1/3.png" alt="3"></div>
-  <div class="emojiBtn" data-id="3"><img src="1/4.png" alt="4"></div>
-</div>
-
-  <button id="retry" onclick="resetGame()">🔄</button>
-  <div class="retry-left"></div>
+<div class="info">
+    <p style:"margin-right: 10px;">🏆 High Score: <span id="highScoreText">0</span>|</p>
+<p>Score: <span id="score">0</span></p>|
+<div id="hud">Lives: <span id="attempts">3</span></div>
 
 </div>
-<div class="overlay" id="overlay"></div>
 
-<!-- Tutorial Popup -->
-<div style="width:300px;"id="tutorialPopup">
-  <h3>Tutorials</h3>
- <p>Welcome to <strong>Farm Animals Orders 🌾</strong>!</p>
-  <p>1- Follow the animals’ orders in the correct sequence.</p>
-  <p>2- Tap the green light ❇️ → perform the action in order.</p>
-  <p>3- Skip the red light 🛑 → if red is last, do nothing for 2 seconds; if it appears in the middle, just continue with green orders.</p>
-  <p>Good luck and have fun! 🎉</p>
+<!-- Show Items Screen -->
+<div id="showScreen" class="screen">
+  <p>✨ Memorize these items!</p>
+  <div id="items" class="item-grid"></div>
+</div>
+
+<!-- Question Screen -->
+<div id="questionScreen" class="screen">
+
+  <p class="question">🤔 Which of these items was shown?</p>
+  <div id="choices" class="choice-grid"></div>
   
-  <button style= "background: #CD923B;" onclick="resetGame()">▶️ Play</button>
 </div>
 
 <!-- Game Over Popup -->
-<div id="gameOverPopup" class="hidden">
-  <h2>Game Over 😢</h2>
-  <p>Your Score: <span id="finalScore">0</span></p>
-  <p>High Score: <span id="finalHighScore">0</span></p>
-  <button onclick="resetGame()">Play Again</button>
-  <div style="color: grey !important;" class="retry-left"></div>
+<div id="endScreen" class="hidden">
+  <h2> Game Over! 😢</h2>
+  <p>✅ Your Score: <span id="finalScore">0</span></p>
+  <p>🏆 High Score: <span id="finalHighScore">0</span></p>
+  <button onclick="resetGame()"> Play Again</button>
+        <div class="retry-left"style="color: grey !important;" id="retryLeft"></div>
 </div>
+
+</div>
+  <div class="overlay" id="overlay"></div>
+</div>
+
+<!-- Tutorial Popup -->
+<div id="tutorialPopup" class="hidden">
+  <h3>Tutorials</h3>
+  <p>Welcome to <strong>🧠 Items Memory Test</strong>!</p>
+  <p>1- Memorize the shown items quickly.</p>
+  <p>2- Choose the <strong>correct item</strong> from 4 options.</p>
+  <p>3- You only have <strong>3 mistakes</strong> for each level — be careful!</p>
+  <p>Good luck, and have fun! 🎉</p>
+  
+  <button onclick="resetGame()">▶️ Play</button>
+</div>
+
+  <button style="background: transparent; padding:2px; font-size:1.5em; "id="retryBtn" onclick="resetGame()">🔄</button>
+           <div class="retry-left"id="retryLeft"></div>
+
+
 
 
 <script>
-/* ===== State & config ===== */
+
 let retries = 0;
-const maxRetries = 3;
+const maxRetries = 2; // ✅ internally 2 (first + one retry)
+let attempts = 3; // ✅ 3 lives
 
-const emojiButtons = Array.from(document.querySelectorAll('.emojiBtn'));
-const PLAYER_GRACE_MS = 420;
-const TRAILING_RED_WAIT_MS = 2000;
+const allItems = [
+  "Rose.png","Milk.png","Corn.png","Cherry.png","Gold_Necklace.png","Collar.png","Meal_for_students.png","Ice_Cream.png","Yogurt.png",
+  "Peacock_Feather.png","Rural_Dog.png","Sapphire.png",
+  "ErSilver_Bucket.png","Darkgold_Ore.png","Bike.png",
+  "ErLimit_Pack.png","Cheese_Cake.png","ErKetchup_Chip.png","Small_Bomb.png","Ginseng.png","Tuna_sandwich.png","Gold_Ingot.png",
+];
 
-let sequence = [];
-let score = 0;
-let highScore = Number(localStorage.getItem('simonHighScore') || 0);
-let levelSpeed = 600;
+let shownItems = [], score = 0;
 
-let playingBot = false;
-let waitingForClick = false;
-let trailingWaitActive = false;
-let currentStep = 0;
-let trailingTimer = null;
-
-/* UI refs */
-const highScoreText = document.getElementById('highScoreText');
-const scoreEl = document.getElementById('score');
-const tutorialPopup = document.getElementById('tutorialPopup');
-const gameOverPopup = document.getElementById('gameOverPopup');
-const finalScoreEl = document.getElementById('finalScore');
-const finalHighScoreEl = document.getElementById('finalHighScore');
-const gameGrid = document.getElementById('gameGrid');
-
-highScoreText.textContent = highScore;
-scoreEl.textContent = score;
-
+const scoreEl = document.getElementById("score");
+const highScoreText = document.getElementById("highScoreText");
+const finalScore = document.getElementById("finalScore");
+const finalHighScore = document.getElementById("finalHighScore");
+const attemptsEl = document.getElementById("attempts"); 
 const retryLeftEls = document.getElementsByClassName('retry-left');
+const gameContainer = document.getElementById("gameContainer");
 
-function updateRetryLeft() {
-  const remaining = Math.max(0, maxRetries - retries);
-  Array.from(retryLeftEls).forEach(el => {
-    el.textContent = `Retries left: ${remaining}/2`;
+// ---------- Preload Images ----------
+function preloadGameImages(callback) {
+  let loadedCount = 0;
+  allItems.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    if (img.complete) loadedCount++;
+    else img.onload = img.onerror = () => { loadedCount++; if (loadedCount >= allItems.length) done(); };
   });
-}
 
-
-/* ✅ Disable game when retries are 0 */
-function disableGame() {
-  gameGrid.classList.add("disabled");
-  tutorialPopup.classList.add('hidden');
-  document.getElementById('overlay').classList.add('hidden');
-}
-
-/* Utility sleep */
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-/* --- Bot flash visual --- */
-function flashBot(step){
-  return new Promise(resolve => {
-    const btn = emojiButtons[step.id];
-    btn.classList.add(step.type === 'green' ? 'greenFlash' : 'redFlash');
-    const dur = Math.max(180, Math.floor(levelSpeed * 0.72));
-    setTimeout(()=>{
-      btn.classList.remove('greenFlash','redFlash');
-      resolve();
-    }, dur);
-  });
-}
-
-/* --- Play full sequence --- */
-async function playSequence(){
-  playingBot = true;
-  waitingForClick = false;
-  trailingWaitActive = false;
-  clearTimeout(trailingTimer);
-
-  for (let i=0;i<sequence.length;i++){
-    await flashBot(sequence[i]);
-    await sleep(Math.max(120, Math.floor(levelSpeed * 0.44)));
+  function done() {
+    console.log("✅ Memory Test images preloaded!");
+    window.parent.postMessage("loaded", "*"); // notify parent
+    callback();
   }
 
-  await sleep(PLAYER_GRACE_MS);
-  playingBot = false;
-
-  currentStep = 0;
-  while (currentStep < sequence.length && sequence[currentStep].type === 'red') {
-    currentStep++;
-  }
-
-  if (currentStep >= sequence.length) {
-    activateTrailingWait();
-  } else {
-    waitingForClick = true;
-  }
+  if (loadedCount >= allItems.length) done();
 }
 
-function nextRound(){
-  const randomId = Math.floor(Math.random()*4);
 
-  const last1 = sequence[sequence.length-1]?.type;
-  const last2 = sequence[sequence.length-2]?.type;
-
-  let type;
-  if (last1 === 'red' && last2 === 'red') {
-    type = 'green';
-  } else if (last1 === 'green' && last2 === 'green') {
-    type = 'red';
-  } else {
-    type = Math.random() < 0.7 ? 'green' : 'red';
-  }
-
-  sequence.push({ id: randomId, type });
-
-  // Increment score AFTER updating UI
-  scoreEl.textContent = score;
-
-  // Update high score correctly
-  if (score > highScore) {
-    highScore = score;
-    highScoreText.textContent = highScore;
-    localStorage.setItem('simonHighScore', highScore);
-  }
-
-  // Now increment for next round
-  score++;
-
-  levelSpeed = Math.max(280, 800 - score * 25);
-  playSequence();
-}
-
-function activateTrailingWait(){
-  trailingWaitActive = true;
-  waitingForClick = false;
-  clearTimeout(trailingTimer);
-  trailingTimer = setTimeout(()=>{
-    trailingWaitActive = false;
-    nextRound();
-  }, TRAILING_RED_WAIT_MS);
-}
-
-function handleClick(e){
-  const btn = e.currentTarget;
-  if (playingBot) return;
-  if (trailingWaitActive){
-    wrongFlash(btn);
-    return endGame();
-  }
-  if (!waitingForClick) return;
-
-  const id = Number(btn.dataset.id);
-  const step = sequence[currentStep];
-
-  if (step && step.type === 'green' && step.id === id){
-    correctFlash(btn);
-    currentStep++;
-    while (currentStep < sequence.length && sequence[currentStep].type === 'red'){
-      currentStep++;
-    }
-    if (currentStep >= sequence.length){
-      if (sequence[sequence.length - 1]?.type === 'red'){
-        activateTrailingWait();
-      } else {
-        waitingForClick = false;
-        setTimeout(nextRound, 520);
-      }
-    }
-  } else {
-    wrongFlash(btn);
-    endGame();
-  }
-}
-
-function correctFlash(btn){
-  btn.classList.add('correctClick');
-  setTimeout(()=>btn.classList.remove('correctClick'), 180);
-}
-function wrongFlash(btn){
-  btn.classList.add('wrongClick');
-  setTimeout(()=>btn.classList.remove('wrongClick'), 220);
-}
-
-function startGame(){
-  if (retries >= maxRetries) {
-    disableGame();
-    return;
-  }
-  tutorialPopup.classList.add('hidden');
-  document.getElementById('overlay').classList.add('hidden');
-  sequence = [];
+function startGame() {
   score = 0;
+  attempts = 3; 
+  attemptsEl.textContent = attempts;
   scoreEl.textContent = score;
-  levelSpeed = 800;
-  currentStep = 0;
-  playingBot = false;
-  waitingForClick = false;
-  trailingWaitActive = false;
-  clearTimeout(trailingTimer);
-  nextRound();
+  hidePopups();
+  showScreen("showScreen");
+  generateItems();
 }
 
-function endGame(){
-  playingBot = false;
-  waitingForClick = false;
-  trailingWaitActive = false;
-  clearTimeout(trailingTimer);
+let currentDelay = 2700;   // start at 3s
+const minDelay   = 1500;   // fastest speed
+const step       = 150;    // reduce per round
 
-  finalScoreEl.textContent = score;
+function generateItems() {
+  const itemsDiv = document.getElementById("items");
+  itemsDiv.innerHTML = '';
 
-  // Ensure high score is correct
-  highScore = Math.max(highScore, score);
-  localStorage.setItem('simonHighScore', highScore);
+  const shuffled = [...allItems].sort(() => Math.random() - 0.5);
+  shownItems = shuffled.slice(0, 9);
 
-  finalHighScoreEl.textContent = highScore;
-  highScoreText.textContent = highScore;
+  shownItems.forEach(item => {
+    const div = document.createElement("div");
+    div.className = 'item';
+    div.innerHTML = `<img src="${item}" alt="${item}">`;
+    itemsDiv.appendChild(div);
+  });
 
-  gameOverPopup.classList.remove('hidden');
-  document.getElementById('overlay').classList.remove('hidden');
+  // ⏱ Use dynamic delay
+  setTimeout(() => { 
+    askQuestion();
+
+    // gradually decrease delay until minDelay
+    if (currentDelay > minDelay) {
+      currentDelay -= step;
+    }
+  }, currentDelay);
+}
+
+
+function askQuestion() {
+  showScreen("questionScreen");
+  const choicesDiv = document.getElementById("choices");
+  choicesDiv.innerHTML = '';
+
+  const correctItem = shownItems[Math.floor(Math.random() * shownItems.length)];
+  const wrongItems = allItems.filter(i => !shownItems.includes(i));
+  const shuffledWrongs = wrongItems.sort(() => Math.random() - 0.5).slice(0, 3);
+  const options = [correctItem, ...shuffledWrongs].sort(() => Math.random() - 0.5);
+
+  options.forEach(opt => {
+    const div = document.createElement("div");
+    div.className = 'item';
+    div.innerHTML = `<img src="${opt}" alt="${opt}">`;
+
+    div.onclick = () => {
+      if (opt === correctItem) {
+        div.style.background = "lightgreen"; 
+        setTimeout(() => {
+          score++;
+          scoreEl.textContent = score;
+          showScreen("showScreen");
+          generateItems();
+        }, 800);
+      } else {
+        div.style.background = "lightcoral"; 
+        setTimeout(() => {
+          attempts--; 
+          attemptsEl.textContent = attempts;
+          if (attempts <= 0) {
+            endGame();
+          } else {
+            showScreen("showScreen");
+            generateItems();
+          }
+        }, 800);
+      }
+    };
+
+    choicesDiv.appendChild(div);
+  });
+}
+
+function endGame() {
+  finalScore.textContent = score;
+  let best = parseInt(localStorage.getItem("memoryHighScore")) || 0;
+
+  if (score > best) {
+    localStorage.setItem("memoryHighScore", score);
+    best = score;
+  }
+
+  finalHighScore.textContent = best;
+  highScoreText.textContent = best; // ✅ Update HUD high score too
 
   window.parent.postMessage({ 
     type: "highscore", 
-    game: 1,
-    highscore: highScore 
+    game: 1,  
+    highscore: best 
   }, "*");
+
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("endScreen").classList.remove("hidden");
+  document.getElementById('overlay').classList.remove('hidden');
 }
 
 
-/* ✅ Reset Game (consumes retry + save to storage) */
+
+  
+
+  
+
+
+
 function resetGame() {
   if (retries >= maxRetries) {
+    // this retry is the second & final
     alert("No retries left!");
-    gameOverPopup.classList.add('hidden');
-    document.getElementById('overlay').classList.add('hidden');
+document.getElementById("endScreen").classList.add("hidden");
+    retries++;
+    updateRetryLeft();
     disableGame();
     return;
   }
-
-  gameOverPopup.classList.add('hidden');
-document.getElementById('overlay').classList.add('hidden');
-
-  // Start the game
+  document.getElementById("endScreen").classList.add("hidden");
+  document.getElementById('overlay').classList.add('hidden');
   startGame();
 
-  // Now consume a retry
   retries++;
-  localStorage.setItem("farmRetries", retries);
   updateRetryLeft();
 }
 
 
-/* ---------- Preload Images ---------- */
-const gameImages=["1/1.png","1/2.png","1/3.png","1/4.png"];
-function preloadGameImages(callback){
-  let loadedCount=0;
-  gameImages.forEach(src=>{
-    const img=new Image(); img.src=src;
-    if(img.complete) checkDone();
-    else img.onload=img.onerror=checkDone;
-  });
-  function checkDone(){
-    loadedCount++;
-    if(loadedCount>=gameImages.length){
-      console.log("✅ Game 1 images preloaded!");
-      window.parent.postMessage("loaded","*");
-      callback();
-    }
+function updateRetryLeft() {
+    // total retries display = maxRetries - 1 (first play doesn't reduce display)
+    let displayTotal = maxRetries - 1;
+
+    // display retries: first play doesn't reduce display, but clamp to 0 minimum
+    let displayRetries = Math.max(0, displayTotal - Math.max(0, retries - 1));
+
+    // update all elements in retryLeftEls
+    Array.from(retryLeftEls).forEach(el => {
+        el.textContent = `Retries left: ${displayRetries}/${displayTotal}`;
+    });
+
+    // save current retries
+    localStorage.setItem("memoryRetries", retries);
+}
+
+
+
+function disableGame() {
+  gameContainer.style.pointerEvents = "none";
+  gameContainer.style.opacity = "0.5";
+}
+
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function updateHighScore() {
+  const saved = localStorage.getItem("memoryHighScore") || 0;
+  highScoreText.textContent = saved;
+}
+
+function showTutorial(){
+  document.getElementById("tutorialPopup").classList.remove("hidden");
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function hidePopups(){
+  document.getElementById("endScreen").classList.add("hidden");
+  document.getElementById("tutorialPopup").classList.add("hidden");
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+updateHighScore();
+
+window.onload = () => { 
+  const savedRetries = parseInt(localStorage.getItem("memoryRetries"));
+  if (!isNaN(savedRetries)) {
+    retries = savedRetries;
   }
-}
-
-
-/* ✅ Load saved retries on page load */
-window.onload=()=>{ 
-  document.getElementById("tutorialPopup").style.display="block"; 
-  const savedRetries = localStorage.getItem("farmRetries");
-  retries = savedRetries ? parseInt(savedRetries) : 0;
-  updateRetryLeft();
+  if (retries >= maxRetries) disableGame();
+  preloadGameImages(() => {
+    showTutorial();
+    updateRetryLeft();
+  });
 };
 
-/* --- Bind click events to tiles --- */
-emojiButtons.forEach(btn => btn.addEventListener('click', handleClick));
-
-window.startGame = startGame;
-window.resetGame = resetGame;
-
-
-// ✅ Wait until everything is fully loaded (images, CSS, scripts, etc.)
-function waitForFullPageLoad(callback) {
-  if (document.readyState === "complete") {
-    // Already loaded
-    callback();
-  } else {
-    window.addEventListener("load", () => {
-      callback();
-    });
-  }
-}
-
-// Example usage
-waitForFullPageLoad(() => {
-  console.log("✅ All elements fully loaded, now start game logic...");
-  // startGame();  // <-- call your game init function here
-});
 </script>
+
 
 </body>
 </html>
