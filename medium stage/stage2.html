@@ -229,14 +229,32 @@ function addScore(gameNum, points){
 
 
 
+/* ---------- Persistent Iframes Controller (stage-specific) ---------- */
+function persistAllIframes() {
+  const iframes = document.querySelectorAll(".game-frame");
+  iframes.forEach((iframe, index) => {
+    const pageId = iframe.closest(".page")?.id || "unknown";
+    const storageKey = `iframe_${pageId}_${index+1}`;
 
-/* ---------- Unified Preload + Persistent Iframes ---------- */
-function preloadAllAssets() {
+    const savedSrc = localStorage.getItem(storageKey);
+    if (savedSrc) iframe.src = savedSrc;
+
+    iframe.addEventListener("load", () => {
+      try { localStorage.setItem(storageKey, iframe.src); } catch(e) {}
+    });
+    window.addEventListener("beforeunload", () => {
+      try { localStorage.setItem(storageKey, iframe.src); } catch(e) {}
+    });
+  });
+}
+window.addEventListener("DOMContentLoaded", persistAllIframes);
+
+/* ---------- Wait for all images including iframe internals ---------- */
+function waitForAllImagesAndIframes(timeoutPerResource = 5000) {
   const loaderText = document.getElementById("loading-text");
   const parentImages = Array.from(document.images);
-  const iframes = Array.from(document.querySelectorAll(".game-frame"));
+  const iframes = Array.from(document.querySelectorAll("iframe"));
 
-  // Preload all game assets
   const preloadedGameImages = getAllIframeGameAssets().map(src => {
     const img = new Image();
     img.src = src;
@@ -254,18 +272,15 @@ function preloadAllAssets() {
 
   const trackImage = (img) => {
     if (!img) return;
-    if (img.complete) {
-      updateProgress();
-    } else {
-      img.addEventListener("load", updateProgress);
-      img.addEventListener("error", updateProgress);
-      setTimeout(updateProgress, 5000);
+    if (img.complete) updateProgress();
+    else {
+      img.onload = img.onerror = updateProgress;
+      setTimeout(updateProgress, timeoutPerResource);
     }
   };
 
   resources.forEach(trackImage);
 
-  // Observe dynamically added images
   const observeNewImages = (root) => {
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
@@ -285,40 +300,36 @@ function preloadAllAssets() {
     observer.observe(root, { childList: true, subtree: true });
     return observer;
   };
-
   observeNewImages(document.body);
 
-  // Process iframes: restore persistent src, wait for iframe + internal images
-  const iframePromises = iframes.map((iframe, index) => {
-    const pageId = iframe.closest(".page")?.id || "unknown";
-    const storageKey = `iframe_${pageId}_${index+1}`;
-    const savedSrc = localStorage.getItem(storageKey);
-    if (savedSrc) iframe.src = savedSrc;
-
+  // ✅ Preload iframe itself and its internal images fully
+  const iframePromises = iframes.map(iframe => {
     return new Promise(resolve => {
       iframe.onload = async () => {
         try {
-          localStorage.setItem(storageKey, iframe.src);
-
-          // Same-origin: preload images inside iframe
           const doc = iframe.contentDocument || iframe.contentWindow.document;
           if (doc) {
-            Array.from(doc.images).forEach(trackImage);
-            observeNewImages(doc.body);
+            const iframeImages = Array.from(doc.images);
+            iframeImages.forEach(trackImage);
+            observeNewImages(doc.body); // track dynamically added images
+            // Wait for all internal iframe images
+            await Promise.all(iframeImages.map(img => new Promise(res => {
+              if (img.complete) res();
+              else img.onload = img.onerror = res;
+            })));
           }
         } catch(e) {
           console.warn("Cannot access iframe (cross-origin):", iframe.src);
         }
         resolve();
       };
-
       // Force reload to trigger onload
       iframe.src = iframe.src;
     });
   });
 
   return Promise.all(iframePromises).then(() => {
-    // Wait until all resources are loaded
+    // Wait until all parent + game assets + iframe images are loaded
     return new Promise(res => {
       const interval = setInterval(() => {
         if (loadedCount >= resources.length) {
@@ -333,7 +344,7 @@ function preloadAllAssets() {
 // Call this on window load
 window.addEventListener("load", () => {
   document.body.style.overflow = "hidden"; // lock scroll until loaded
-  preloadAllAssets().then(() => {
+  waitForAllImagesAndIframes().then(() => {
     setTimeout(() => {
       const loader = document.getElementById("loading-screen");
       if (loader) {
@@ -342,15 +353,11 @@ window.addEventListener("load", () => {
         setTimeout(() => loader.remove(), 500);
       }
       document.body.style.overflow = "auto";
-      console.log("✅ All parent + iframe images and game assets fully loaded!");
+      console.log("✅ All parent images + game assets + iframe internal images are fully loaded!");
+      // ✅ Call your stage start function here, e.g. startStage()
     }, 500);
   });
 });
-
-
-
-
-
 
 
 
