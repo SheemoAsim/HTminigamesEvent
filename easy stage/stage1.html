@@ -233,6 +233,54 @@ window.addEventListener("DOMContentLoaded", () => {
 
 /* ---------- Persistent Iframes Controller ---------- */
 
+// ✅ Preload all iframe game assets (Stage Page: Game1, Game2, Game3)
+function preloadIframeAssets() {
+  // --- Game 1 Images ---
+  const folder1 = "1/";
+  const game1Items = [
+    "Pistachio.png","Revival_Grass.png","Jinjunmei.png","Watermelon.png","Small_Bomb.png",
+    "Honeysuckle.png","Pumpkin.png","Tomato.png","Pu'er.png","Tulip.png",
+    "Corn.png","Bean.png","Rose.png","Pomegranate.png","Strawberry.png",
+    "Straw_Mushroom.png","Potato.png","Banana.png","Grape.png","Ginseng.png",
+    "Longjing.png","Onion.png","Mango.png","Jasmine.png","Passion_Fruit.png",
+    "Tangerine.png","Cherry.png","Saffron.png","Monthly_Rose.png","Dahongpao.png",
+    "Pear.png","Biluochun.png","Licorice.png","Peach.png","Blueberry.png",
+    "Chili.png","Queensland_Nut.png","Cordyceps.png","Bonus.png"
+  ].map(icon => folder1 + icon);
+
+  // --- Game 2 Images ---
+  const game2Items = ["2/1.png","2/2.png","2/3.png","2/4.png"];
+
+  // --- Game 3 Images ---
+  const game3Items = []; // ← none in this stage
+
+  // --- Combine all ---
+  const allImages = [...game1Items, ...game2Items, ...game3Items];
+
+  // --- Attach them to the loader system ---
+  const hiddenDiv = document.createElement("div");
+  hiddenDiv.style.display = "none";
+  document.body.appendChild(hiddenDiv);
+
+  allImages.forEach(src => {
+    const img = new Image();
+    img.decoding = "async";   // ✅ force decode async
+    img.loading = "eager";    // ✅ force load immediately
+    img.src = "assets/" + src; // adjust path if needed
+    hiddenDiv.appendChild(img); // 👈 ensures waitForAllImagesDynamic sees it
+
+    // ✅ always mark it finished (loaded, error, or timeout)
+    img.onload = () => console.log("✅ Loaded:", src);
+    img.onerror = () => console.warn("❌ Failed:", src);
+    setTimeout(() => {
+      if (!img.complete) console.warn("⏳ Timeout forcing complete:", src);
+    }, 5000);
+  });
+
+  console.log("📦 Preloading", allImages.length, "iframe game assets (counted in loader)...");
+}
+window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+
 
 
 // Wait for all iframes and images to load fully (no errors shown)
@@ -366,6 +414,8 @@ function persistIframesStage1() {
 
 // Initialize on DOMContentLoaded
 window.addEventListener("DOMContentLoaded", persistIframesStage1);
+
+
 </script>
 </body>
 </html>
