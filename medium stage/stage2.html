@@ -391,40 +391,28 @@ window.addEventListener("DOMContentLoaded", persistIframes);
 
 
 
-// ✅ Preload all iframe game assets (Game1, Game2, Game3)
-function preloadIframeAssets() {
-  // --- Game 1 Images ---
+// ✅ Preload all iframe game assets for Stage X
+function preloadIframeAssetsStageX() {
+  // --- Game 1 Images (used in #gameGrid HTML) ---
   const game1Items = [
-    "Rose.png","Milk.png","Corn.png","Cherry.png","Gold_Necklace.png","Collar.png",
-    "Meal_for_students.png","Ice_Cream.png","Yogurt.png","Peacock_Feather.png",
-    "Rural_Dog.png","Sapphire.png","ErSilver_Bucket.png","Darkgold_Ore.png","Bike.png",
-    "ErLimit_Pack.png","Cheese_Cake.png","ErKetchup_Chip.png","Small_Bomb.png",
-    "Ginseng.png","Tuna_sandwich.png","Gold_Ingot.png"
+    "1/1.png","1/2.png","1/3.png","1/4.png"
   ];
 
   // --- Game 2 Images ---
-  const matchPairs = [
-    "Small_Bomb.png:Super_Bomb.png",
-    "Cherry.png:Cherry_pie.png",
-    "Chicken2.png:Chicken_Adult2.png",
-    "Jasmine.png:Jasmine_Tea2.png",
-    "Cotton_Cloth.png:Cotton.png",
-    "Milk2.png:Cow_Adult2.png",
-    "Peach.png:Peach_Juice.png",
-    "Duck_Adult2.png:Poultry_Feed_II2.png",
-    "ErKetchup_Chip.png:Potato2.png",
-    "Gold_Ore.png:Gold_Ingot2.png",
-    "Peacock2.png:Peacock_Feather2.png"
+  const game2Items = [
+    "2/1.png","2/2.png","2/3.png","2/4.png"
   ];
-  const bonusIcons = ["bonus1.png"];
-  const game2Items = matchPairs.flatMap(p => p.split(":")).concat(bonusIcons);
 
-  // --- Game 3 Images ---
+  // --- Game 3 Images (emojiPairs + bonus images) ---
+  const folder3 = '3/';
   const game3Items = [];
-  for (let i = 0; i < 14; i++) {
-    const start = (i * 3) + 1;
-    game3Items.push(`${start}.png`, `${start+1}.png`, `${start+2}.png`);
+
+  // Push pairs 1.png to 52.png
+  for (let i = 1; i <= 52; i++) {
+    game3Items.push(`${folder3}${i}.png`);
   }
+  // Add bonus images
+  game3Items.push(`${folder3}bonus1.png`, `${folder3}bonus2.png`);
 
   // --- Combine all ---
   const allImages = [...game1Items, ...game2Items, ...game3Items];
@@ -436,16 +424,15 @@ function preloadIframeAssets() {
 
   allImages.forEach(src => {
     const img = new Image();
-    img.decoding = "async";   // ✅ decode async for speed
-    img.loading = "eager";    // ✅ force immediate load
-    img.src = "assets/" + src; // adjust if needed
-    hiddenDiv.appendChild(img); // 👈 ensures waitForAllImagesDynamic sees it
+    img.src = src; // already includes folder path
+    hiddenDiv.appendChild(img); // ensures waitForAllImagesDynamic sees it
   });
 
-  console.log("📦 Preloading", allImages.length, "iframe game assets (counted in loader)...");
+  console.log("📦 Preloading", allImages.length, "iframe game assets for Stage X...");
 }
 
-window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+window.addEventListener("DOMContentLoaded", preloadIframeAssetsStageX);
+
 
 
 
