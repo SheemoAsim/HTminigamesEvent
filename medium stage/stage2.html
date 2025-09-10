@@ -225,218 +225,27 @@ function addScore(gameNum, points){
     if(scoreEl) scoreEl.textContent = scores[gameNum];
 }
 
-/* ---------- Initialize UI ---------- */
-window.addEventListener("DOMContentLoaded", () => {
-  const submitBtn = document.getElementById("submit-button");
-
-  // ✅ Check if coming back from Results page due to an error
-  if (localStorage.getItem("enableSubmit") === "true") {
-    submitBtn.disabled = false;
-    submitBtn.classList.remove("done");
-    submitBtn.innerHTML = "Submit";
-
-    // ✅ Clear the flag so it only happens once
-    localStorage.removeItem("enableSubmit");
-  }
-});
 
 
 
-/* ---------- Persistent Iframes Controller ---------- */
-function persistIframes() {
-  const iframes = document.querySelectorAll(".game-frame");
-
-  iframes.forEach((iframe, index) => {
-    const storageKey = `iframe${index+1}Src`;
-
-    // ✅ Restore saved src on page load
-    const savedSrc = localStorage.getItem(storageKey);
-    if (savedSrc) {
-      iframe.src = savedSrc;
-    }
-
-    // ✅ Save current src whenever iframe loads (or changes)
-    iframe.addEventListener("load", () => {
-      localStorage.setItem(storageKey, iframe.src);
-    });
-  });
-}
-
-// ✅ Initialize on DOMContentLoaded
-window.addEventListener("DOMContentLoaded", persistIframes);
 
 
-function waitForAllElements(timeoutPerResource = 5000) {
-  const images = Array.from(document.images);
-  const iframes = Array.from(document.querySelectorAll("iframe"));
-  const resources = [...images, ...iframes];
-  const total = resources.length;
-  let loaded = 0;
-
-  const slowResources = [];
-
-  const updateProgress = (res = null, status = "loaded") => {
-    loaded++;
-    let percent = Math.round((loaded / total) * 100);
-    if (percent > 100) percent = 100; // safety
-
-    const textEl = document.getElementById("loading-text");
-    if (textEl) textEl.textContent = `Loading... ${percent}%`;
-
-    if (status !== "loaded" && res) {
-      const src = res.src || res.tagName;
-      console.warn(`⚠ Resource issue: ${src} → ${status}`);
-      slowResources.push({ src, status });
-    }
-
-    // If finished all
-    if (loaded === total) {
-      // If errors, show them in loader
-      if (slowResources.length > 0) {
-        const loader = document.getElementById("loading-screen");
-        if (loader) {
-          const list = slowResources
-            .map(r => `<li>${r.src} → ${r.status}</li>`)
-            .join("");
-          loader.insertAdjacentHTML(
-            "beforeend",
-            `<ul style="font-size:12px; margin-top:10px; color:#ff6b6b; text-align:left;">
-              Some resources failed/slow:<br>${list}
-            </ul>`
-          );
-        }
-      }
-    }
-  };
-
-  if (total === 0) {
-    // nothing to load → instantly "100%"
-    const textEl = document.getElementById("loading-text");
-    if (textEl) textEl.textContent = `Loading... 100%`;
-    return Promise.resolve();
-  }
-
-  const promises = resources.map(res => {
-    return new Promise(resolve => {
-      let done = false;
-      const finish = (status = "loaded") => {
-        if (!done) {
-          done = true;
-          updateProgress(res, status);
-          resolve();
-        }
-      };
-
-      if ((res.tagName === "IMG" && res.complete) ||
-          (res.tagName === "IFRAME" && res.contentDocument?.readyState === "complete")) {
-        return finish("loaded");
-      }
-
-      res.onload = () => finish("loaded");
-      res.onerror = () => finish("error");
-
-      setTimeout(() => finish("timeout"), timeoutPerResource);
-    });
-  });
-
-  return Promise.all(promises);
-}
-
-window.addEventListener("load", () => {
-  waitForAllElements().then(() => {
-    // ⏳ Delay 1s to let player see 100% or errors
-    setTimeout(() => {
-      const loader = document.getElementById("loading-screen");
-      if (loader) {
-        loader.style.transition = "opacity 0.5s ease";
-        loader.style.opacity = "0";
-        setTimeout(() => loader.remove(), 500);
-      }
-      document.body.style.overflow = "auto";
-    }, 1000);
-  });
-});
-
-document.body.style.overflow = "hidden";
-
-
-
-/* ---------- Persistent Iframes Controller (stage-specific) ---------- */
-/* ---------- Persistent Iframes Controller (Stage 3) ---------- */
-function persistAllIframes() {
-  const iframes = document.querySelectorAll(".game-frame");
-  iframes.forEach((iframe, index) => {
-    const pageId = iframe.closest(".page")?.id || "unknown";
-    const storageKey = `iframe_${pageId}_${index+1}`;
-
-    const savedSrc = localStorage.getItem(storageKey);
-    if (savedSrc) iframe.src = savedSrc;
-
-    iframe.addEventListener("load", () => {
-      try { localStorage.setItem(storageKey, iframe.src); } catch(e) {}
-    });
-    window.addEventListener("beforeunload", () => {
-      try { localStorage.setItem(storageKey, iframe.src); } catch(e) {}
-    });
-  });
-}
-window.addEventListener("DOMContentLoaded", persistAllIframes);
-
-// ✅ Preload all iframe game assets (Game1, Game2, Game3)
-function getAllIframeGameAssets() {
-  // --- Game 1 Images ---
-  const game1Items = [
-    "Rose.png","Milk.png","Corn.png","Cherry.png","Gold_Necklace.png","Collar.png",
-    "Meal_for_students.png","Ice_Cream.png","Yogurt.png","Peacock_Feather.png",
-    "Rural_Dog.png","Sapphire.png","ErSilver_Bucket.png","Darkgold_Ore.png","Bike.png",
-    "ErLimit_Pack.png","Cheese_Cake.png","ErKetchup_Chip.png","Small_Bomb.png",
-    "Ginseng.png","Tuna_sandwich.png","Gold_Ingot.png"
-  ];
-
-  // --- Game 2 Images ---
-  const matchPairs = [
-    "Small_Bomb.png:Super_Bomb.png",
-    "Cherry.png:Cherry_pie.png",
-    "Chicken2.png:Chicken_Adult2.png",
-    "Jasmine.png:Jasmine_Tea2.png",
-    "Cotton_Cloth.png:Cotton.png",
-    "Milk2.png:Cow_Adult2.png",
-    "Peach.png:Peach_Juice.png",
-    "Duck_Adult2.png:Poultry_Feed_II2.png",
-    "ErKetchup_Chip.png:Potato2.png",
-    "Gold_Ore.png:Gold_Ingot2.png",
-    "Peacock2.png:Peacock_Feather2.png"
-  ];
-  const bonusIcons = ["bonus1.png"];
-  const game2Items = matchPairs.flatMap(p => p.split(":")).concat(bonusIcons);
-
-  // --- Game 3 Images ---
-  const game3Items = [];
-  for (let i = 0; i < 14; i++) {
-    const start = (i * 3) + 1;
-    game3Items.push(`${start}.png`, `${start+1}.png`, `${start+2}.png`);
-  }
-
-  return [...game1Items, ...game2Items, ...game3Items].map(src => "assets/" + src);
-}
-
-// Wait for all iframes and images to load fully
-function waitForAllImagesDynamic(timeoutPerResource = 5000) {
+/* ---------- Unified Preload + Persistent Iframes ---------- */
+function preloadAllAssets() {
   const loaderText = document.getElementById("loading-text");
-  const iframes = Array.from(document.querySelectorAll("iframe"));
   const parentImages = Array.from(document.images);
+  const iframes = Array.from(document.querySelectorAll(".game-frame"));
 
-  // --- Add preloaded iframe game assets ---
+  // Preload all game assets
   const preloadedGameImages = getAllIframeGameAssets().map(src => {
     const img = new Image();
     img.src = src;
     return img;
   });
 
-  let resources = [...parentImages, ...preloadedGameImages]; 
+  let resources = [...parentImages, ...preloadedGameImages];
   let loadedCount = 0;
 
-  // Update loader progress
   const updateProgress = () => {
     loadedCount++;
     const percent = Math.min(Math.round((loadedCount / resources.length) * 100), 100);
@@ -450,13 +259,13 @@ function waitForAllImagesDynamic(timeoutPerResource = 5000) {
     } else {
       img.addEventListener("load", updateProgress);
       img.addEventListener("error", updateProgress);
-      setTimeout(updateProgress, timeoutPerResource);
+      setTimeout(updateProgress, 5000);
     }
   };
 
   resources.forEach(trackImage);
 
-  // Observe dynamically added images in parent
+  // Observe dynamically added images
   const observeNewImages = (root) => {
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
@@ -479,31 +288,52 @@ function waitForAllImagesDynamic(timeoutPerResource = 5000) {
 
   observeNewImages(document.body);
 
-  // Track images inside same-origin iframes
-  iframes.forEach(iframe => {
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      if (!doc) return;
-      Array.from(doc.images).forEach(trackImage);
-      observeNewImages(doc.body);
-    } catch(e) {
-      console.warn("Cannot access iframe (cross-origin):", iframe.src);
-    }
+  // Process iframes: restore persistent src, wait for iframe + internal images
+  const iframePromises = iframes.map((iframe, index) => {
+    const pageId = iframe.closest(".page")?.id || "unknown";
+    const storageKey = `iframe_${pageId}_${index+1}`;
+    const savedSrc = localStorage.getItem(storageKey);
+    if (savedSrc) iframe.src = savedSrc;
+
+    return new Promise(resolve => {
+      iframe.onload = async () => {
+        try {
+          localStorage.setItem(storageKey, iframe.src);
+
+          // Same-origin: preload images inside iframe
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          if (doc) {
+            Array.from(doc.images).forEach(trackImage);
+            observeNewImages(doc.body);
+          }
+        } catch(e) {
+          console.warn("Cannot access iframe (cross-origin):", iframe.src);
+        }
+        resolve();
+      };
+
+      // Force reload to trigger onload
+      iframe.src = iframe.src;
+    });
   });
 
-  return new Promise(resolve => {
-    const checkInterval = setInterval(() => {
-      if (loadedCount >= resources.length) {
-        clearInterval(checkInterval);
-        resolve();
-      }
-    }, 100);
+  return Promise.all(iframePromises).then(() => {
+    // Wait until all resources are loaded
+    return new Promise(res => {
+      const interval = setInterval(() => {
+        if (loadedCount >= resources.length) {
+          clearInterval(interval);
+          res();
+        }
+      }, 100);
+    });
   });
 }
 
 // Call this on window load
 window.addEventListener("load", () => {
-  waitForAllImagesDynamic().then(() => {
+  document.body.style.overflow = "hidden"; // lock scroll until loaded
+  preloadAllAssets().then(() => {
     setTimeout(() => {
       const loader = document.getElementById("loading-screen");
       if (loader) {
@@ -512,12 +342,32 @@ window.addEventListener("load", () => {
         setTimeout(() => loader.remove(), 500);
       }
       document.body.style.overflow = "auto";
-      console.log("✅ All parent and iframe images (including preloaded game assets) are fully loaded!");
+      console.log("✅ All parent + iframe images and game assets fully loaded!");
     }, 500);
   });
 });
 
-document.body.style.overflow = "hidden";
+
+
+
+
+
+
+
+/* ---------- Initialize UI ---------- */
+window.addEventListener("DOMContentLoaded", () => {
+  const submitBtn = document.getElementById("submit-button");
+
+  // ✅ Check if coming back from Results page due to an error
+  if (localStorage.getItem("enableSubmit") === "true") {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove("done");
+    submitBtn.innerHTML = "Submit";
+
+    // ✅ Clear the flag so it only happens once
+    localStorage.removeItem("enableSubmit");
+  }
+});
 
 
 
