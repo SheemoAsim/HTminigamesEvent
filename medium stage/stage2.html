@@ -391,30 +391,40 @@ window.addEventListener("DOMContentLoaded", persistIframes);
 
 
 
-// ✅ Preload all iframe game assets (Stage Page: Game1, Game2, Game3)
+// ✅ Preload all iframe game assets (Game1, Game2, Game3)
 function preloadIframeAssets() {
   // --- Game 1 Images ---
-  // These are in the HTML grid
   const game1Items = [
-    "1/1.png","1/2.png","1/3.png","1/4.png"
+    "Rose.png","Milk.png","Corn.png","Cherry.png","Gold_Necklace.png","Collar.png",
+    "Meal_for_students.png","Ice_Cream.png","Yogurt.png","Peacock_Feather.png",
+    "Rural_Dog.png","Sapphire.png","ErSilver_Bucket.png","Darkgold_Ore.png","Bike.png",
+    "ErLimit_Pack.png","Cheese_Cake.png","ErKetchup_Chip.png","Small_Bomb.png",
+    "Ginseng.png","Tuna_sandwich.png","Gold_Ingot.png"
   ];
 
   // --- Game 2 Images ---
-  const game2Items = [
-    "2/1.png","2/2.png","2/3.png","2/4.png"
+  const matchPairs = [
+    "Small_Bomb.png:Super_Bomb.png",
+    "Cherry.png:Cherry_pie.png",
+    "Chicken2.png:Chicken_Adult2.png",
+    "Jasmine.png:Jasmine_Tea2.png",
+    "Cotton_Cloth.png:Cotton.png",
+    "Milk2.png:Cow_Adult2.png",
+    "Peach.png:Peach_Juice.png",
+    "Duck_Adult2.png:Poultry_Feed_II2.png",
+    "ErKetchup_Chip.png:Potato2.png",
+    "Gold_Ore.png:Gold_Ingot2.png",
+    "Peacock2.png:Peacock_Feather2.png"
   ];
+  const bonusIcons = ["bonus1.png"];
+  const game2Items = matchPairs.flatMap(p => p.split(":")).concat(bonusIcons);
 
   // --- Game 3 Images ---
-  const folder3 = "3/";
   const game3Items = [];
-
-  // Emoji pairs (1–52)
-  for (let i = 1; i <= 52; i += 2) {
-    game3Items.push(`${folder3}${i}.png`, `${folder3}${i+1}.png`);
+  for (let i = 0; i < 14; i++) {
+    const start = (i * 3) + 1;
+    game3Items.push(`${start}.png`, `${start+1}.png`, `${start+2}.png`);
   }
-
-  // Bonus images
-  game3Items.push("3/bonus1.png", "3/bonus2.png");
 
   // --- Combine all ---
   const allImages = [...game1Items, ...game2Items, ...game3Items];
@@ -426,22 +436,17 @@ function preloadIframeAssets() {
 
   allImages.forEach(src => {
     const img = new Image();
-    img.decoding = "async";   // ✅ force decode async
-    img.loading = "eager";    // ✅ force load immediately
-    img.src = "assets/" + src; // adjust path if needed
+    img.decoding = "async";   // ✅ decode async for speed
+    img.loading = "eager";    // ✅ force immediate load
+    img.src = "assets/" + src; // adjust if needed
     hiddenDiv.appendChild(img); // 👈 ensures waitForAllImagesDynamic sees it
-
-    // ✅ always mark it finished (loaded, error, or timeout)
-    img.onload = () => console.log("✅ Loaded:", src);
-    img.onerror = () => console.warn("❌ Failed:", src);
-    setTimeout(() => {
-      if (!img.complete) console.warn("⏳ Timeout forcing complete:", src);
-    }, 5000);
   });
 
   console.log("📦 Preloading", allImages.length, "iframe game assets (counted in loader)...");
 }
+
 window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+
 
 
 /* ---------- Wait for all images & iframes ---------- */
