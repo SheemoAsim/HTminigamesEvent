@@ -168,7 +168,9 @@ window.onload = () => {
   if (retries >= maxRetries) {
     disableGame(); // ✅ fully disable game if retries hit 0
   } else {
-    showTutorial(); // only show tutorial if player can play
+    preloadGameImages(() => {
+      showTutorial(); // only show tutorial after all images are ready
+    }); // only show tutorial if player can play
   }
 };
 
