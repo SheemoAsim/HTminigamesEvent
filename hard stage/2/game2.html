@@ -134,7 +134,7 @@ let retries = 0;
 const maxRetries = 2; // first play + 1 retry
 
 let gameOver = false;
-let speed = 400; 
+let speed = 375; 
 let intervalId;
 let feedbackTimeout;
 let currentPair = null;
@@ -294,7 +294,7 @@ function startCycling() {
 
 function generateNextPair() {
   previousPair = currentPair;
-  if (Math.random() < 0.1) {
+  if (Math.random() < 0.05) {
     const bonusImg = bonusIcons[Math.floor(Math.random() * bonusIcons.length)];
     leftEl.innerHTML  = `<img src="${bonusImg}" data-img="${bonusImg}">`;
     rightEl.innerHTML = `<img src="${bonusImg}" data-img="${bonusImg}">`;
