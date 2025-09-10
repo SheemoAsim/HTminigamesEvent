@@ -123,6 +123,19 @@ function scrollToTop(){
 }
 
 
+
+/* ---------- Iframe Lazy Load ---------- */
+const iframes = Array.from(document.querySelectorAll("iframe"));
+
+function loadIframesAfterPreload() {
+  iframes.forEach(iframe => {
+    const src = iframe.getAttribute("data-src");
+    if(src) iframe.src = src;
+  });
+}
+
+
+
 /* ---------- Submit Results ---------- */
 
 // Listen for messages from child games
@@ -418,6 +431,24 @@ window.addEventListener("load", () => {
 });
 
 document.body.style.overflow = "hidden";
+
+
+
+window.addEventListener("DOMContentLoaded",loadIframesAfterPreload);
+
+/* ---------- Wait for all images and preload assets ---------- */
+window.addEventListener("load",()=>{
+  waitForAllImagesDynamic().then(()=>{
+    setTimeout(()=>{
+      const loader=document.getElementById("loading-screen");
+      if(loader){loader.style.transition="opacity 0.5s ease"; loader.style.opacity="0"; setTimeout(()=>loader.remove(),500);}
+      document.body.style.overflow="auto";
+      console.log("✅ All parent and iframe images (dynamic + preloaded) are fully loaded!");
+    },500);
+  });
+});
+
+
 
 
 
