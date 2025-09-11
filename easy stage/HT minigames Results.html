@@ -430,7 +430,7 @@ let total = 0;
 
 
 // ------------------- Add / update submission -------------------
-function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
+async function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
   if(!ign) return {ok:false, msg:'IGN required'};
   ign = String(ign).trim();
   stage = Number(stage);
@@ -439,20 +439,22 @@ function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
   const raw = { g1:Number(g1)||0, g2:Number(g2)||0, g3:Number(g3)||0 };
   players[ign] = players[ign] || { ign, id:id||("ID-"+Math.floor(Math.random()*9999)), stages:{}, final:{} };
 
-  if(players[ign].stages[stage] && players[ign].stages[stage].raw){
-  // Instead of invalidating, just overwrite the stage
+  // Overwrite or add stage submission
   players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated:false, source };
+  
+  // Recompute player score
   computePlayer(ign);
-  saveToJSONBin();
-  return {ok:true, msg:'Submission updated.'};
+
+  // Save with merge to JSONBin
+  await saveToJSONBin();
+
+  // Determine return message
+  const msg = (players[ign].stages[stage].submittedAt === Date.now()) ? 
+              'Submission accepted.' : 'Submission updated.';
+
+  return {ok:true, msg};
 }
 
-
-  players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated:false, source };
-  computePlayer(ign);
-  saveToJSONBin();
-  return {ok:true, msg:'Submission accepted.'};
-}
 
 
 ////4
@@ -511,51 +513,68 @@ let allPlayers = Object.values(players);
 
 ////5 JSONBIN functions
 
-// ------------------- Save to JSONBin -------------------
-// Save always as an array
-async function saveToJSONBin(){
+
+// ------------------- Save to JSONBin with merge -------------------
+async function saveToJSONBin(ign=null) {
   try {
-console.log("🔄 Saving to JSONBin...", players); // DEBUG
+    console.log("🔄 Saving to JSONBin...", players);
+
+    // 1️⃣ Load current JSONBin content first
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { "X-Master-Key": MASTER_KEY }
+    });
+    const data = await res.json();
+    const existing = data.record.rankings || [];
+
+    // 2️⃣ Convert to object for easy merging by IGN
+    let merged = {};
+    existing.forEach(p => { if(p.ign) merged[p.ign] = p; });
+    Object.values(players).forEach(p => { if(p.ign) merged[p.ign] = p; });
+
+    // 3️⃣ Convert merged object back to array
+    const mergedArray = Object.values(merged);
+
+    // 4️⃣ Save back using PUT (JSONBin requires PUT)
     await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method:"PUT",
-      headers:{
-        "Content-Type":"application/json",
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
         "X-Master-Key": MASTER_KEY
       },
-      body: JSON.stringify({ rankings: Object.values(players) })
- // save as array
+      body: JSON.stringify({ rankings: mergedArray })
     });
-  } catch(err){
-    console.error(err);
-    // ✅ Go back to the last 
 
-
-
-
+    console.log("✅ JSONBin saved successfully!");
+  } catch(err) {
+    console.error("❌ Error saving to JSONBin:", err);
   }
 }
 
-// Load and rebuild players object
-async function loadFromJSONBin(){
-  try{
+// ------------------- Load from JSONBin -------------------
+async function loadFromJSONBin() {
+  try {
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers:{ "X-Master-Key": MASTER_KEY }
+      headers: { "X-Master-Key": MASTER_KEY }
     });
     const data = await res.json();
     const list = data.record.rankings || [];
 
     players = {};
-    list.forEach(p=>{
-      players[p.ign] = p;
+    list.forEach(p => {
+      if(p.ign) players[p.ign] = p;
     });
+
     Object.keys(players).forEach(computePlayer);
     renderAll();
-  } catch(err){
-    console.error("Failed loading JSONBin", err);
+    console.log("✅ JSONBin loaded successfully!");
+  } catch(err) {
+    console.error("❌ Failed loading JSONBin", err);
   }
 }
 
-///5/////
+
+
+///6/////
 
 
 
@@ -627,6 +646,26 @@ function editPlayer(){
 }
 
 
+// ------------------- Auto-refresh leaderboard -------------------
+async function autoRefreshLeaderboard(){
+    try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers:{ "X-Master-Key": MASTER_KEY }
+        });
+        const data = await res.json();
+        const list = data.record.rankings || [];
+
+        // Merge old players with new ones
+        list.forEach(p => {
+            players[p.ign] = p; // this overwrites only if same IGN exists
+        });
+
+        Object.keys(players).forEach(computePlayer);
+        renderAll();
+    } catch(err){
+        console.error("Failed auto-refresh JSONBin", err);
+    }
+}
 
 
 
@@ -647,6 +686,9 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     await loadFromJSONBin();
     renderAll();
   }
+
+setInterval(autoRefreshLeaderboard, 10000);
+
 });
 
 </script>
