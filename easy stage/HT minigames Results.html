@@ -440,13 +440,13 @@ function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
   players[ign] = players[ign] || { ign, id:id||("ID-"+Math.floor(Math.random()*9999)), stages:{}, final:{} };
 
   if(players[ign].stages[stage] && players[ign].stages[stage].raw){
-    players[ign].stages[stage] = { invalidated:true, invalidReason:'duplicate', submittedAt: Date.now() };
-    players[ign].final = { ready:false, score:null };
-    saveToJSONBin();
-    computePlayer(ign);
-    saveToJSONBin();
-    return {ok:false, msg:'Duplicate submission detected → stage invalidated'};
-  }
+  // Instead of invalidating, just overwrite the stage
+  players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated:false, source };
+  computePlayer(ign);
+  saveToJSONBin();
+  return {ok:true, msg:'Submission updated.'};
+}
+
 
   players[ign].stages[stage] = { raw, submittedAt: Date.now(), invalidated:false, source };
   computePlayer(ign);
