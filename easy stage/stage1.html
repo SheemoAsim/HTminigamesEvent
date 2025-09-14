@@ -61,7 +61,7 @@
 <script>
 
 /* ---------- Global Countdown ---------- */
-const deadline = new Date('2025-09-17T23:59:59');
+const deadline = new Date('2025-09-17T11:59:59');
 window.onload = () => setInterval(countdown, 1000);
 
 function countdown() {
@@ -216,6 +216,21 @@ function addScore(gameNum, points){
     if(scoreEl) scoreEl.textContent = scores[gameNum];
 }
 
+
+
+function adjustIframeForLandscape() {
+  const iframe = document.querySelector('iframe[src="game3.html"]'); // target your iframe
+  if (!iframe) return;
+
+  // Check if landscape (width > height)
+  if (window.innerWidth > window.innerHeight) {
+    iframe.style.height = '800px';
+    iframe.style.overflow = 'auto';   // make scrolling possible inside iframe
+  } else {
+    iframe.style.height = '630px';    // default height for portrait
+    
+  }
+}
 /* ---------- Initialize UI ---------- */
 window.addEventListener("DOMContentLoaded", () => {
   const submitBtn = document.getElementById("submit-button");
@@ -388,7 +403,6 @@ document.body.style.overflow = "hidden";
 
 
 
-
 function persistIframesStage1() {
   const iframes = document.querySelectorAll(".game-frame, .responsive-iframe");
   const stage = 1; // Force Stage 1 for this page
@@ -397,14 +411,17 @@ function persistIframesStage1() {
     const pageId = iframe.closest(".page")?.id || `pageUnknown`;
     const storageKey = `stage${stage}_${pageId}_iframe${index+1}`;
 
-    // ✅ Restore saved src for Stage 1 only
+    // ✅ Restore saved src (with new cache-buster every load)
     const savedSrc = localStorage.getItem(storageKey);
-    if (savedSrc) iframe.src = savedSrc;
+    if (savedSrc) {
+      iframe.src = savedSrc + "?t=" + Date.now();
+    }
 
-    // ✅ Save current src whenever iframe loads
+    // ✅ Save only the clean src (without ?t=timestamp)
     iframe.addEventListener("load", () => {
       try {
-        localStorage.setItem(storageKey, iframe.src);
+        let cleanSrc = iframe.src.split("?t=")[0];
+        localStorage.setItem(storageKey, cleanSrc);
       } catch (e) {
         console.warn("⚠ Cannot save iframe src (cross-origin)", e);
       }
@@ -416,6 +433,11 @@ function persistIframesStage1() {
 window.addEventListener("DOMContentLoaded", persistIframesStage1);
 
 
+window.addEventListener('load', adjustIframeForLandscape);
+
+// Run on resize/orientation change
+window.addEventListener('resize', adjustIframeForLandscape);
+window.addEventListener('orientationchange', adjustIframeForLandscape);
 </script>
 </body>
 </html>
