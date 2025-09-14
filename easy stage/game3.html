@@ -28,8 +28,8 @@
 
   <!-- Game Container -->
   <div style="padding:10px;margin:10px"class="game-container">
-      <div style="height:380px;margin-bottom:0;" class="game-box" id="gameBox3">
-          <div id="gameContainer">
+      <div style="height: 380px; overflow: auto; box-sizing:border-box;" class="game-box" id="gameBox3">
+          <div style="height:100%; box-sizing:border-box;" id="gameContainer">
               <div class="emoji" id="question"></div>
               <div class="options" id="options"></div>
           </div>
@@ -163,10 +163,15 @@ function startGame3() {
   hideGame3Over();
   loadGame3Question();
   document.getElementById("tutorial3").style.display="none";
-  document.getElementById('overlay').classList.add('hidden');
   document.getElementById("question").style.display = "block";
   document.getElementById("options").style.display = "block";
 }
+
+const gameBox = document.getElementById('gameBox3');
+  if (window.innerWidth > 1000) {
+    gameBox.style.height = '700px';
+    document.getElementById('gameContainer').style.minHeight = '700px';
+  }
 
 /* ✅ Reset Game (Retry buttons, consumes retry) */
 function resetGame3() {
@@ -327,7 +332,7 @@ document.getElementById('overlay').classList.add('hidden');
 window.onload = () => { 
   // Show tutorial
   document.getElementById("tutorial3").style.display = "block"; 
-
+document.getElementById('overlay').classList.remove('hidden');
   // Load retries from localStorage
   const savedRetries = parseInt(localStorage.getItem("game3Retries"));
   if (!isNaN(savedRetries)) {
