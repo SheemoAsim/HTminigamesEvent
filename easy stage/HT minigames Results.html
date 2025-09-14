@@ -359,9 +359,9 @@ footer{
 <h2 style="margin-top:0;">Calculation Approach</h2>
 <p>Each stage contributes equally. Final = Average of all stages (with difficulty multipliers).</p>
 <ul>
-  <li><strong>Stage 1:</strong> (Game1 Score(0-400pts)% + Game2 Least Time(0-20min)% + Game3 Right answer(0/6-6/6)%) / 3 × 1.0</li>
-  <li><strong>Stage 2:</strong> (Game1 Score(0-150pts)% + Game2 Least Time(0-20min)% + Game3 Score(0-150pts)%) / 3 × 1.25</li>
-  <li><strong>Stage 3:</strong> (Game3 Score(0-150pts)% + Game3 Score(0-150pts)% + Game3 Score(0-150pts)%) / 3 × 1.5</li>
+  <li><strong>Stage 1:</strong> (Game1 Score(0-500pts)% + Game2 Least Time(0-20min)% + Game3 Right answer(0/6-6/6)%) / 3 × 1.0</li>
+  <li><strong>Stage 2:</strong> (Game1 Score(0-200pts)% + Game2 Least Time(0-20min)% + Game3 Score(0-200pts)%) / 3 × 1.25</li>
+  <li><strong>Stage 3:</strong> (Game3 Score(0-200pts)% + Game3 Score(0-200pts)% + Game3 Score(0-200pts)%) / 3 × 1.5</li>
 </ul>
 <p><em>Example:</em> Stage1=80%, Stage2=90%, Stage3=85% → Final = (80+90+85)/3 = 85%</p>
 </div>
@@ -446,8 +446,8 @@ let players = JSON.parse(localStorage.getItem("players")) || {};
 
 // ------------------- Game constants -------------------
 const HS_MIN = 0;       // minimum highscore
-const HS1_MAX = 400;  
-const HS_MAX = 150;     // maximum highscore
+const HS1_MAX = 500;  
+const HS_MAX = 200;     // maximum highscore
 const TIME_MIN = 0;     // minimum time
 const S1_MAX_TIME = 20; // Stage 1 max time in minutes
 const S2_MAX_TIME = 20; // Stage 2 max time in minutes
@@ -753,29 +753,68 @@ settingsIcon.addEventListener("click", () => {
 });
 
 // Delete all players
-function deleteAllPlayers(){
-  if(confirm("Are you sure you want to delete ALL players?")){
+// Delete all players (local + JSONBin)
+async function deleteAllPlayers() {
+  if (!confirm("⚠️ Are you sure you want to DELETE ALL players? This cannot be undone.")) {
+    return;
+  }
+
+  try {
+    // 1️⃣ Clear local memory and localStorage
     players = {};
-    localStorage.setItem("players", JSON.stringify(players));
-    saveToJSONBin();
+    localStorage.removeItem("players");
+
+    // 2️⃣ Save empty array to JSONBin
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": MASTER_KEY
+      },
+      body: JSON.stringify({ rankings: [] })
+    });
+
+    // 3️⃣ Refresh UI
     renderAll();
-    alert("All players deleted.");
+    alert("✅ All players deleted successfully!");
+  } catch (err) {
+    console.error("❌ Error deleting all players:", err);
+    alert("❌ Failed to delete all players. Check console.");
   }
 }
 
+
 // Delete specific player by IGN & ID
-function deletePlayer(){
+async function deletePlayer() {
   const ign = document.getElementById("delete-ign").value.trim();
   const id = document.getElementById("delete-id").value.trim();
-  if(!ign || !id){ alert("Enter IGN and ID."); return; }
-  if(players[ign] && players[ign].id === id){
+
+  if (!ign || !id) {
+    alert("Enter IGN and ID.");
+    return;
+  }
+
+  if (players[ign] && players[ign].id === id) {
+    // 1️⃣ Remove from local memory
     delete players[ign];
     localStorage.setItem("players", JSON.stringify(players));
-    saveToJSONBin();
-    renderAll();
-    alert(`Player ${ign} deleted.`);
-  } else alert("Player not found or ID mismatch.");
+
+    try {
+      // 2️⃣ Update JSONBin with remaining players
+      await saveToJSONBin();
+
+      // 3️⃣ Refresh UI
+      renderAll();
+      alert(`✅ Player ${ign} deleted.`);
+    } catch (err) {
+      console.error("❌ Error deleting player:", err);
+      alert("❌ Failed to delete player from JSONBin.");
+    }
+  } else {
+    alert("❌ Player not found or ID mismatch.");
+  }
 }
+
 
 // Edit player
 function editPlayer(){
@@ -859,7 +898,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   setInterval(async ()=>{
     await loadFromJSONBin();
     renderLeaderboardOnly(); // only update rankings, not other UI
-  }, 10000);
+  }, 40000);
 });
 
 // Also refresh when returning to the tab
