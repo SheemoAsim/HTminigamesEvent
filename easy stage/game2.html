@@ -178,19 +178,34 @@ function renderTiles2(){
 }
 
 /* Flip */
-function flipTile2(i,tile,row,col){
+/* Flip */
+function flipTile2(i, tile, row, col) {
   moves2++;
   tile.classList.add("flipping");
-  const inner=tile.querySelector(".inner");
+  const inner = tile.querySelector(".inner");
 
-  inner.addEventListener("transitionend",function onEnd(){
-    inner.removeEventListener("transitionend",onEnd);
-    positions2[i]=(positions2[i]+1)%sequences2[i].length;
+  let handled = false;
+
+  function finishFlip() {
+    if (handled) return;
+    handled = true;
+
+    positions2[i] = (positions2[i] + 1) % sequences2[i].length;
     renderTiles2();
     tile.classList.remove("flipping");
     checkWin2();
-  },{once:true});
+  }
+
+  // Normal case: transition ends
+  inner.addEventListener("transitionend", function onEnd() {
+    inner.removeEventListener("transitionend", onEnd);
+    finishFlip();
+  }, { once: true });
+
+  // Fallback: if transitionend doesn’t fire
+  setTimeout(finishFlip, 400); // match your CSS flip duration
 }
+
 
 /* Check win */
 function checkWin2() {
