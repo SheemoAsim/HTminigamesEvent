@@ -35,12 +35,32 @@
   h1 {
     margin-bottom: 30px;
   }
+
+  #overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+  }
 </style>
 </head>
 <body>
 
-<h1>Reset All Games Data</h1>
-<button onclick="clearAllGamesStorage()">🗑️ Reset All Games Data</button>
+<div id="content">
+  <h1>Reset All Games Data</h1>
+  <button onclick="clearAllGamesStorage()">🗑️ Reset All Games Data</button>
+</div>
+
+<div id="overlay" style="display:none;">
+  ❌ This page can no longer be used.
+</div>
 
 <script>
 function clearAllGamesStorage() {
@@ -83,6 +103,24 @@ function clearAllGamesStorage() {
 
     alert("✅ All game storage cleared!");
 }
+
+/* 🔒 Limit page usage to 2 loads */
+(function limitLoads() {
+  let loads = localStorage.getItem("resetPageLoads");
+  loads = loads ? parseInt(loads, 10) : 0;
+
+  if (loads >= 1) {
+    // After 2 loads → block page
+    document.getElementById("content").style.display = "none";
+    document.getElementById("overlay").style.display = "flex";
+
+    // Optional: try to auto-close tab (works only if opened by script)
+    setTimeout(() => window.close(), 2000);
+  } else {
+    // Count this load
+    localStorage.setItem("resetPageLoads", loads + 1);
+  }
+})();
 </script>
 
 </body>
