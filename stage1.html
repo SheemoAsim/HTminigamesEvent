@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Harvest Town - Mini Games</title>
+<link href="style.css" rel="stylesheet">
+<meta property="og:title" content="HTMini Games - Stage-1 EASY" />
+  <meta property="og:description" content="click here for Stage-1 EASY " />
+<meta property="og:image" content="https://sheemoasim.github.io/HTminigamesEvent/easy%20stage/header.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+
+  <meta property="og:url" content="https://sheemoasim.github.io/HTminigamesEvent/easy%20stage/stage1.html" />
+  <meta property="og:type" content="website" />
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <p id="loading-text">Loading... 0%</p>
+</div>
+
+<div id="timer-overlay" style="left: 0; width: 100%; background-color: rgba(0, 0, 0, 0.5); color: white; padding: 5px; text-align: center; font-size: 12px; z-index: 1000;">
+  This stage will be closed down in <span id="endcountdown"></span>
+</div>
+<div style="padding: 20px;"class="page active" id="page1">
+  <img src="HTMG.png" alt="Harvest Town Logo " class="logo" />
+  <h2>1st Stage</h2>
+  <h3>EASY</h3>
+  <input type="text" id="ign" placeholder="Enter IGN" />
+  <input type="number" id="id" placeholder="Enter ID" />
+  <button onclick="goToPage2()">Start</button>
+  <div class="page-overlay hidden" id="pageOverlay1"></div>
+</div>
+
+<!-- PAGE 2 (Game 1 iframe) -->
+<div class="page" id="page2">
+  <iframe style="display: flex !important;height: 750px;"src="game1.html" class="game-frame"></iframe>
+  <div class="bottom-buttons">
+      <button onclick="goToPage(1)">⬅ Back</button>
+      <button onclick="goToPage(3)">Next ➡</button>
+  </div>
+</div>
+
+<!-- PAGE 3 (Game 2 iframe) -->
+<div class="page" id="page3">
+    <iframe style="display: flex !important;height: 600px;"src="game2.html" class="game-frame"></iframe>
+  <div class="bottom-buttons">
+      <button onclick="goToPage(2)">⬅ Back</button>
+      <button onclick="goToPage(4)">Next ➡</button>
+  </div>
+</div>
+
+<!-- PAGE 4 (Game 3 iframe) -->
+<div class="page" id="page4">
+  <iframe style="display: flex !important;height: 630px;" src="game3.html" class="game-frame"></iframe>
+  <div class="bottom-buttons">
+      <button onclick="goToPage(3)">⬅ Back</button>
+  </div>
+<button id="submit-button" class="submit-button" onclick="submitResults()">Submit</button>
+<p class="reminder" id="reminder-text">
+  Don’t FORGET to submit your participation or you’ll lose your progress
+</p>
+</div>
+
+
+<script>
+
+/* ---------- Global Countdown ---------- */
+const deadline = new Date('2025-09-17T11:59:59');
+window.onload = () => setInterval(countdown, 1000);
+
+function countdown() {
+    const currentTime = new Date();
+    const timeRemaining = deadline - currentTime;
+    const el = document.getElementById('endcountdown');
+    if (!el) return;
+
+    if (timeRemaining <= 0) {
+        // ✅ Only trigger once
+        if (!window.stageEnded) {
+            window.stageEnded = true;
+
+            // Show alert with your message
+            alert("Sorry, the time for this stage has ended. Better luck next time!");
+
+            // Close page visually: blank/black
+            document.body.innerHTML = "";                // remove all page content
+            document.body.style.backgroundColor = "black"; // set black background
+        }
+        return;
+    }
+
+    const days = Math.floor(timeRemaining / (1000*60*60*24));
+    const hours = Math.floor((timeRemaining % (1000*60*60*24))/(1000*60*60));
+    const minutes = Math.floor((timeRemaining % (1000*60*60))/(1000*60));
+    const seconds = Math.floor((timeRemaining % (1000*60))/1000);
+    el.textContent = `${days}D ${hours}Hr ${minutes}m ${seconds}s`;
+}
+
+
+/* ---------- Global Variables ---------- */
+let scores = { 1: 0, 2: 0, 3: 0 };   // results for the 3 games in this stage
+let currentStage = 1;                // 🔹 change to 2 or 3 for other stages
+
+
+/* ---------- Navigation ---------- */
+function goToPage2(){
+    const ign = document.getElementById('ign').value.trim();
+    const id = document.getElementById('id').value.trim();
+    if(!ign || !id){ alert("Please fill all fields"); return; }
+    goToPage(2);
+}
+
+function goToPage(n){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    const pageEl = document.getElementById('page'+n);
+    if(pageEl) pageEl.classList.add('active');
+    scrollToTop();
+}
+
+function scrollToTop(){
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
+/* ---------- Submit Results ---------- */
+
+// Listen for messages from child games
+window.addEventListener("message", (event) => {
+  if (event.data.type === "highscore") {
+    scores[event.data.game] = event.data.highscore;
+    console.log("Updated scores:", scores);
+  }
+});
+
+
+function submitResults() {
+  const confirmed = confirm("Are you sure you're done?");
+  if (!confirmed) return;
+
+if (!navigator.onLine) {
+    alert("Can't save result! Check your internet connection!");
+    return; // stop here, like cancel
+  }
+
+  const ign = document.getElementById('ign').value.trim();
+  const id = document.getElementById('id').value.trim();
+
+  // ✅ Show results in alert
+  alert(
+    `IGN: ${ign}\nID: ${id}\nStage: ${currentStage}\n\n` +
+    `G1: ${scores[1]}\n` +
+    `G2: ${scores[2]}\n` +
+    `G3: ${scores[3]}`
+  );
+
+  const submitBtn = document.getElementById("submit-button");
+  submitBtn.classList.add("done");
+  submitBtn.innerHTML = "Done!";
+  submitBtn.disabled = true;
+
+   const reminder = document.getElementById("reminder-text");
+  reminder.innerHTML = `Thanks for participating, ${ign}! 🎉<br><span id="ranking-link" style="color:#4dabf7; cursor:pointer;">See Leaderboard</span>`;
+  reminder.style.color = "white";
+
+  const g1 = scores[1] || 0;  
+  const g2 = scores[2] || 0;   
+  const g3 = scores[3] || 0;  
+
+  finishStage(currentStage, g1, g2, g3);
+
+  // ✅ Add click event to ranking text
+  setTimeout(() => {
+    const rankingLink = document.getElementById("ranking-link");
+    if (rankingLink) {
+            rankingLink.addEventListener("click", () => {
+        window.location.href = "HT minigames Results.html";
+      });
+    }
+  }, 200);
+  
+     
+
+
+}
+
+function finishStage(stageNumber, g1, g2, g3) {
+  const ign = document.getElementById("ign").value.trim();
+  const id = document.getElementById("id").value.trim();
+
+  let players = JSON.parse(localStorage.getItem("players")) || {};
+
+  if (!players[ign]) {
+    players[ign] = { ign, id, stages: {}, final:{} };
+  }
+
+ 
+players[ign].stages[stageNumber] = { 
+    raw:{ g1, g2, g3 }, 
+    submittedAt: Date.now() 
+  };
+
+  localStorage.setItem("players", JSON.stringify(players));
+
+  // Store last stage for results.html
+  localStorage.setItem("latestStageResult", JSON.stringify({
+    ign, id, stageNumber, g1, g2, g3
+  }));
+
+  console.log("✅ Stage saved:", players[ign]);
+}
+
+
+
+
+
+/* ---------- Utility: Score Increment ---------- */
+function addScore(gameNum, points){
+    scores[gameNum] += points;
+    const scoreEl = document.getElementById("score"+gameNum);
+    if(scoreEl) scoreEl.textContent = scores[gameNum];
+}
+
+
+
+function adjustIframeForLandscape() {
+  const iframe = document.querySelector('iframe[src="game3.html"]'); // target your iframe
+  if (!iframe) return;
+
+  // Check if landscape (width > height)
+  if (window.innerWidth > window.innerHeight) {
+    iframe.style.height = '800px';
+    iframe.style.overflow = 'auto';   // make scrolling possible inside iframe
+  } else {
+    iframe.style.height = '630px';    // default height for portrait
+    
+  }
+}
+/* ---------- Initialize UI ---------- */
+window.addEventListener("DOMContentLoaded", () => {
+  const submitBtn = document.getElementById("submit-button");
+
+  // ✅ Check if coming back from Results page due to an error
+  if (localStorage.getItem("enableSubmit") === "true") {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove("done");
+    submitBtn.innerHTML = "Submit";
+
+    // ✅ Clear the flag so it only happens once
+    localStorage.removeItem("enableSubmit");
+  }
+});
+
+/* ---------- Persistent Iframes Controller ---------- */
+
+// ✅ Preload all iframe game assets (Stage Page: Game1, Game2, Game3)
+function preloadIframeAssets() {
+  // --- Game 1 Images ---
+  const folder1 = "1/";
+  const game1Items = [
+    "Pistachio.png","Revival_Grass.png","Jinjunmei.png","Watermelon.png","Small_Bomb.png",
+    "Honeysuckle.png","Pumpkin.png","Tomato.png","Pu'er.png","Tulip.png",
+    "Corn.png","Bean.png","Rose.png","Pomegranate.png","Strawberry.png",
+    "Straw_Mushroom.png","Potato.png","Banana.png","Grape.png","Ginseng.png",
+    "Longjing.png","Onion.png","Mango.png","Jasmine.png","Passion_Fruit.png",
+    "Tangerine.png","Cherry.png","Saffron.png","Monthly_Rose.png","Dahongpao.png",
+    "Pear.png","Biluochun.png","Licorice.png","Peach.png","Blueberry.png",
+    "Chili.png","Queensland_Nut.png","Cordyceps.png","Bonus.png"
+  ].map(icon => folder1 + icon);
+
+  // --- Game 2 Images ---
+  const game2Items = ["2/1.png","2/2.png","2/3.png","2/4.png"];
+
+  // --- Game 3 Images ---
+  const game3Items = []; // ← none in this stage
+
+  // --- Combine all ---
+  const allImages = [...game1Items, ...game2Items, ...game3Items];
+
+  // --- Attach them to the loader system ---
+  const hiddenDiv = document.createElement("div");
+  hiddenDiv.style.display = "none";
+  document.body.appendChild(hiddenDiv);
+
+  allImages.forEach(src => {
+    const img = new Image();
+    img.decoding = "async";   // ✅ force decode async
+    img.loading = "eager";    // ✅ force load immediately
+    img.src = "assets/" + src; // adjust path if needed
+    hiddenDiv.appendChild(img); // 👈 ensures waitForAllImagesDynamic sees it
+
+    // ✅ always mark it finished (loaded, error, or timeout)
+    img.onload = () => console.log("✅ Loaded:", src);
+    img.onerror = () => console.warn("❌ Failed:", src);
+    setTimeout(() => {
+      if (!img.complete) console.warn("⏳ Timeout forcing complete:", src);
+    }, 5000);
+  });
+
+  console.log("📦 Preloading", allImages.length, "iframe game assets (counted in loader)...");
+}
+window.addEventListener("DOMContentLoaded", preloadIframeAssets);
+
+
+
+// Wait for all iframes and images to load fully (no errors shown)
+function waitForAllImagesDynamic(timeoutPerResource = 5000) {
+  const loaderText = document.getElementById("loading-text");
+  const iframes = Array.from(document.querySelectorAll("iframe"));
+  const parentImages = Array.from(document.images);
+
+  let resources = [...parentImages]; // start with parent images
+  let loadedCount = 0;
+
+  // Update loader progress
+  const updateProgress = () => {
+    loadedCount++;
+    const percent = Math.min(Math.round((loadedCount / resources.length) * 100), 100);
+    if (loaderText) loaderText.textContent = `Loading... ${percent}%`;
+  };
+
+  // Track a single image
+  const trackImage = (img) => {
+    if (!img) return;
+    if (img.complete) {
+      updateProgress();
+    } else {
+      img.addEventListener("load", updateProgress);
+      img.addEventListener("error", updateProgress);
+      setTimeout(updateProgress, timeoutPerResource); // fallback
+    }
+  };
+
+  // Track all current resources
+  resources.forEach(trackImage);
+
+  // Observe dynamically added images in parent
+  const observeNewImages = (root) => {
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.tagName === "IMG") {
+            resources.push(node);
+            trackImage(node);
+          } else if (node.querySelectorAll) {
+            node.querySelectorAll("img").forEach(img => {
+              resources.push(img);
+              trackImage(img);
+            });
+          }
+        });
+      });
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    return observer;
+  };
+
+  // Start observing parent page
+  observeNewImages(document.body);
+
+  // Track images inside same-origin iframes
+  iframes.forEach(iframe => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      if (!doc) return;
+
+      // Track existing images
+      Array.from(doc.images).forEach(trackImage);
+
+      // Observe dynamically added images inside iframe
+      observeNewImages(doc.body);
+
+    } catch(e) {
+      console.warn("Cannot access iframe (cross-origin):", iframe.src);
+    }
+  });
+
+  // Return promise resolved when all current resources loaded
+  return new Promise(resolve => {
+    const checkInterval = setInterval(() => {
+      if (loadedCount >= resources.length) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 100);
+  });
+}
+
+// Call this on window load
+window.addEventListener("load", () => {
+  waitForAllImagesDynamic().then(() => {
+    setTimeout(() => {
+      const loader = document.getElementById("loading-screen");
+      if (loader) {
+        loader.style.transition = "opacity 0.5s ease";
+        loader.style.opacity = "0";
+        setTimeout(() => loader.remove(), 500);
+      }
+      document.body.style.overflow = "auto";
+      console.log("✅ All parent and iframe images (dynamic too) are fully loaded!");
+    }, 500);
+  });
+});
+
+document.body.style.overflow = "hidden";
+
+
+
+
+
+function persistIframesStage1() {
+  const iframes = document.querySelectorAll(".game-frame, .responsive-iframe");
+  const stage = 1; // Force Stage 1 for this page
+
+  iframes.forEach((iframe, index) => {
+    const pageId = iframe.closest(".page")?.id || `pageUnknown`;
+    const storageKey = `stage${stage}_${pageId}_iframe${index+1}`;
+
+    // ✅ Restore saved src (with new cache-buster every load)
+    const savedSrc = localStorage.getItem(storageKey);
+    if (savedSrc) {
+      iframe.src = savedSrc + "?t=" + Date.now();
+    }
+
+    // ✅ Save only the clean src (without ?t=timestamp)
+    iframe.addEventListener("load", () => {
+      try {
+        let cleanSrc = iframe.src.split("?t=")[0];
+        localStorage.setItem(storageKey, cleanSrc);
+      } catch (e) {
+        console.warn("⚠ Cannot save iframe src (cross-origin)", e);
+      }
+    });
+  });
+}
+
+// Initialize on DOMContentLoaded
+window.addEventListener("DOMContentLoaded", persistIframesStage1);
+
+
+window.addEventListener('load', adjustIframeForLandscape);
+
+// Run on resize/orientation change
+window.addEventListener('resize', adjustIframeForLandscape);
+window.addEventListener('orientationchange', adjustIframeForLandscape);
+</script>
+</body>
+</html>
