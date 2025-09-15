@@ -109,7 +109,7 @@ function clearAllGamesStorage() {
   let loads = localStorage.getItem("resetPageLoads");
   loads = loads ? parseInt(loads, 10) : 0;
 
-  if (loads >= 1) {
+  if (loads >= 3) {
     // After 2 loads → block page
     document.getElementById("content").style.display = "none";
     document.getElementById("overlay").style.display = "flex";
