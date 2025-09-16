@@ -547,19 +547,30 @@ function computePlayer(ign){
     if(st && st.raw){
       const raw = st.raw;
       let g1p=0,g2p=0,g3p=0;
-            if(s===1){
-        g1p = pct_highscore(raw.g1, HS_MIN, HS1_MAX); // 0–400 pts
-        g2p = (raw.g2 === 0) ? 0 : pct_time(raw.g2, S1_MAX_TIME);
-        g3p = pct_correct(raw.g3, TOTAL_Q);
-      } else if(s===2){
-        g1p = pct_highscore(raw.g1, HS_MIN, HS_MAX); // 0–150 pts
-        g2p = (raw.g2 === 0) ? 0 : pct_time(raw.g2, S2_MAX_TIME);
-        g3p = pct_highscore(raw.g3, HS_MIN, HS_MAX);
-      } else {
-        g1p = pct_highscore(raw.g1, HS_MIN, HS_MAX);
-        g2p = pct_highscore(raw.g2, HS_MIN, HS_MAX);
-        g3p = pct_highscore(raw.g3, HS_MIN, HS_MAX);
-      }
+            if (s === 1) {
+  g1p = pct_highscore(raw.g1, HS_MIN, HS1_MAX);
+
+  // raw.g2 is seconds → convert to minutes for percentage
+  let g2Minutes = raw.g2 / 60;
+  g2p = (raw.g2 === 0) ? 0 : pct_time(g2Minutes, S1_MAX_TIME);
+
+  g3p = pct_correct(raw.g3, TOTAL_Q);
+
+} else if (s === 2) {
+  g1p = pct_highscore(raw.g1, HS_MIN, HS_MAX);
+
+  // raw.g2 is seconds → convert to minutes for percentage
+  let g2Minutes = raw.g2 / 60;
+  g2p = (raw.g2 === 0) ? 0 : pct_time(g2Minutes, S2_MAX_TIME);
+
+  g3p = pct_highscore(raw.g3, HS_MIN, HS_MAX);
+
+} else {
+  g1p = pct_highscore(raw.g1, HS_MIN, HS_MAX);
+  g2p = pct_highscore(raw.g2, HS_MIN, HS_MAX);
+  g3p = pct_highscore(raw.g3, HS_MIN, HS_MAX);
+}
+
       st.percent = {g1p,g2p,g3p};
       st.stageScore = round((g1p+g2p+g3p)/3);
       st.stageFinal = round(st.stageScore * MULTS[s]);
@@ -650,7 +661,12 @@ let allPlayers = Object.values(players);
   stageHtml += `<tr><td colspan="2"><strong>Stage ${s}</strong></td></tr>
     <tr><td>Stage Score</td><td>${st.stageScore||'-'}%</td></tr>
     <tr><td>G1</td><td>${st.raw ? st.raw.g1+" pts" : '-'}</td></tr>
-    <tr><td>G2</td><td>${st.raw ? (s===1,2 ? st.raw.g2+" sec" : st.raw.g2+" pts") : '-'}</td></tr>
+   <tr><td>G2</td><td>${
+  st.raw 
+    ? (s===1 || s===2 ? st.raw.g2 + " sec" : st.raw.g2 + " pts")
+    : "-"
+}</td></tr>
+
     <tr><td>G3</td><td>${
       st.raw 
         ? (s===1 ? st.raw.g3+"/6" : st.raw.g3+" pts")
@@ -789,58 +805,132 @@ async function deletePlayer() {
   const ign = document.getElementById("delete-ign").value.trim();
   const id = document.getElementById("delete-id").value.trim();
 
-  if (!ign || !id) {
-    alert("Enter IGN and ID.");
-    return;
-  }
+  if (!ign || !id) { alert("Enter IGN & ID"); return; }
 
-  if (players[ign] && players[ign].id === id) {
-    // 1️⃣ Remove from local memory
-    delete players[ign];
-    localStorage.setItem("players", JSON.stringify(players));
+  try {
+    // 1) Load current remote list
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { "X-Master-Key": MASTER_KEY }
+    });
 
-    try {
-      // 2️⃣ Update JSONBin with remaining players
-      await saveToJSONBin();
-
-      // 3️⃣ Refresh UI
-      renderAll();
-      alert(`✅ Player ${ign} deleted.`);
-    } catch (err) {
-      console.error("❌ Error deleting player:", err);
-      alert("❌ Failed to delete player from JSONBin.");
+    if (!res.ok) {
+      throw new Error(`Failed to fetch JSONBin (status ${res.status})`);
     }
-  } else {
-    alert("❌ Player not found or ID mismatch.");
+
+    const data = await res.json();
+    const existing = Array.isArray(data.record?.rankings) ? data.record.rankings : [];
+
+    // 2) Find remote & local occurrences
+    const remoteIdx = existing.findIndex(p => p.ign === ign && String(p.id) === String(id));
+    const localExists = players[ign] && String(players[ign].id) === String(id);
+
+    if (remoteIdx === -1 && !localExists) {
+      alert("❌ Player not found (local or remote).");
+      return;
+    }
+
+    // 3) Remove from remote if present
+    if (remoteIdx !== -1) {
+      existing.splice(remoteIdx, 1);
+      const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": MASTER_KEY
+        },
+        body: JSON.stringify({ rankings: existing })
+      });
+
+      if (!putRes.ok) {
+        const text = await putRes.text();
+        throw new Error(`Failed to update JSONBin (status ${putRes.status}): ${text}`);
+      }
+    }
+
+    // 4) Remove local copy if present
+    if (localExists) {
+      delete players[ign];
+      localStorage.setItem("players", JSON.stringify(players));
+    }
+
+    // 5) Refresh UI
+    renderAll();
+    alert(`✅ Player ${ign} deleted.`);
+  } catch (err) {
+    console.error("❌ Error deleting player:", err);
+    alert("❌ Failed to delete player. See console for details.");
   }
 }
+
+
 
 
 // Edit player
-function editPlayer(){
+async function editPlayer() {
   const ign = document.getElementById("edit-ign").value.trim();
-  const field = document.getElementById("edit-field").value.trim();
+  const field = document.getElementById("edit-field").value;
   const value = document.getElementById("edit-value").value.trim();
-  if(!ign || !field || !value){ alert("Enter all fields."); return; }
 
-  if(players[ign]){
-    try{
-      if(field === "stages" || field === "final"){
-        players[ign][field] = JSON.parse(value); // accept JSON format for complex objects
-      } else {
-        players[ign][field] = value; // string for simple fields
-      }
-      computePlayer(ign);
-      localStorage.setItem("players", JSON.stringify(players));
-      saveToJSONBin();
-      renderAll();
-      alert(`Player ${ign} updated.`);
-    } catch(e){
-      alert("Invalid value format. For stages/final, enter valid JSON.");
+  if (!ign || !players[ign]) { alert("Player not found!"); return; }
+
+  if (field === "ign") {
+    players[value] = { ...players[ign], ign: value };
+    delete players[ign];
+  } else if (field === "id") {
+    players[ign].id = value;
+  } else if (field === "stages") {
+    const match = value.match(/Stage\s*(\d+)\s*Game\s*(\d+)\s*Score\s*(\d+)/i);
+    if (match) {
+      const stage = Number(match[1]);
+      const game = Number(match[2]);
+      const score = Number(match[3]);
+      players[ign].stages[stage] = players[ign].stages[stage] || { raw: {} };
+      players[ign].stages[stage].raw["g" + game] = score;
+    } else {
+      try {
+        players[ign].stages = JSON.parse(value);
+      } catch { alert("Invalid stage input!"); return; }
     }
-  } else alert("Player not found.");
+  } else if (field === "final") {
+    try {
+      players[ign].final = JSON.parse(value);
+    } catch { alert("Invalid final JSON!"); return; }
+  }
+
+  computePlayer(ign);
+  await saveToJSONBin();
+  renderAll();
+  alert("✏️ Player updated.");
 }
 
+
+async function addPlayer() {
+  const ign = document.getElementById("add-ign").value.trim();
+  const id = document.getElementById("add-id").value.trim();
+  const input = document.getElementById("add-stages").value.trim();
+
+  if (!ign || !id) { alert("IGN & ID required!"); return; }
+
+  // parse "Stage 1 Game 2 Score 55"
+  let stages = {};
+  if (input) {
+    const match = input.match(/Stage\s*(\d+)\s*Game\s*(\d+)\s*Score\s*(\d+)/i);
+    if (match) {
+      const stage = Number(match[1]);
+      const game = Number(match[2]);
+      const score = Number(match[3]);
+      stages[stage] = { raw: { ["g" + game]: score } };
+    } else {
+      try { stages = JSON.parse(input); } catch { alert("Invalid input!"); return; }
+    }
+  }
+
+  players[ign] = { ign, id, stages, final: {} };
+  computePlayer(ign);
+  await saveToJSONBin();
+  renderAll();
+  alert("✅ Player added.");
+}
 
 // ------------------- Auto-refresh leaderboard -------------------
 async function autoRefreshLeaderboard(){
