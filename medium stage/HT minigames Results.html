@@ -1235,6 +1235,11 @@ alert("📦 local data not showing. Refresh the page");
 // 6------------------- On page load -------------------
 
 
+// Ensure loading overlay disappears after 10 seconds
+setTimeout(() => {
+    const overlay = document.getElementById("loading-overlay");
+    if (overlay) overlay.style.display = "none";
+}, 3000); // 10000ms = 10s
 
 
 window.addEventListener('DOMContentLoaded', async ()=>{
