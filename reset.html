@@ -21,7 +21,7 @@
     font-size: 20px;
     border: none;
     border-radius: 10px;
-    background-color: #CD923B;
+    background-color: pink;
     color: white;
     cursor: pointer;
     transition: background 0.3s, transform 0.2s;
@@ -54,10 +54,12 @@
 <body>
 
 <div id="content">
-  <h1>Reset All Games Data</h1>
-  <button onclick="clearAllGamesStorage()">🗑️ Reset All Games Data</button>
+  <h1> 𝗔𝗽𝗼𝗹𝗼𝗴𝘆 & 𝗚𝗶𝗳𝘁 🎁 <br>(You have another chance to play again until sept.19) </h1>
+
+  <button onclick="clearAllGamesStorage()">Reset Retries ✨</button>
 </div>
 
+this page only opens once!!
 <div id="overlay" style="display:none;">
   ❌ This page can no longer be used.
 </div>
@@ -101,15 +103,15 @@ function clearAllGamesStorage() {
     localStorage.removeItem("ts_high");
     localStorage.removeItem("ts_retries");
 
-    alert("✅ All game storage cleared!");
+    alert("✅ your second chance starts now!");
 }
 
 /* 🔒 Limit page usage to 2 loads */
 (function limitLoads() {
-  let loads = localStorage.getItem("resetPageLoads");
+  let loads = localStorage.getItem("resetPageLoads2");
   loads = loads ? parseInt(loads, 10) : 0;
 
-  if (loads >= 3) {
+  if (loads >= 1) {
     // After 2 loads → block page
     document.getElementById("content").style.display = "none";
     document.getElementById("overlay").style.display = "flex";
@@ -118,7 +120,7 @@ function clearAllGamesStorage() {
     setTimeout(() => window.close(), 2000);
   } else {
     // Count this load
-    localStorage.setItem("resetPageLoads", loads + 1);
+    localStorage.setItem("resetPageLoads2", loads + 1);
   }
 })();
 </script>
