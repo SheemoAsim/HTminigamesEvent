@@ -385,14 +385,16 @@ footer{
 <div id="settings-panel" style="
     position: fixed;
     bottom: 70px;
-    left: -300px; /* start hidden */
-    width: 280px;
+    left: -400px; /* start hidden */
+    width: 350px;
+height: 200px;
     background: rgba(15,23,36,0.95);
     border: 1px solid rgba(96,165,250,0.4);
     border-radius: 12px;
     padding: 15px;
     z-index: 1001;
     transition: left 0.4s ease;
+overflow-y:auto;
 ">
   <h3 style="margin-top:0; color:white;">Admin Settings</h3>
   <div id="admin-actions" style="display:none;">
@@ -401,22 +403,64 @@ footer{
     <input id="delete-ign" placeholder="Enter IGN" style="width:100%;margin-bottom:5px;">
     <input id="delete-id" placeholder="Enter ID" style="width:100%;margin-bottom:5px;">
     <button class="btn" onclick="deletePlayer()">Delete Player</button>
-    <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
-    <input id="edit-ign" placeholder="Enter IGN" style="width:100%;margin-bottom:5px;">
-    <select id="edit-field" style="width:100%;margin-bottom:5px;">
-      <option value="ign">IGN</option>
-      <option value="id">ID</option>
-      <option value="stages">Stages (JSON format)</option>
-      <option value="final">Final (JSON format)</option>
-    </select>
-    <input id="edit-value" placeholder="New value" style="width:100%;margin-bottom:5px;">
-    <button class="btn" onclick="editPlayer()">Edit Player</button>
-<hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
-<h4 style="color:white;margin:5px 0;">Add New Player</h4>
-<input id="add-ign" placeholder="Enter IGN" style="width:100%;margin-bottom:5px;">
-<input id="add-id" placeholder="Enter ID" style="width:100%;margin-bottom:5px;">
-<textarea id="add-stages" placeholder='Optional stages JSON, e.g. {"1":{"raw":{"g1":0,"g2":0,"g3":0}}}' style="width:100%;height:60px;margin-bottom:5px;"></textarea>
-<button class="btn" onclick="addPlayer()">Add Player</button>
+   <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
+  <h4 style="color:white;margin:5px 0;">Edit Player</h4>
+
+  <input id="edit-ign" placeholder="Current IGN" style="width:98%;margin-bottom:5px;">
+  <input id="edit-id" placeholder="New ID (optional)" style="width:98%;margin-bottom:5px;">
+
+  <!-- Stages & Games -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px;">
+    <input id="edit-s1g1" placeholder="S1 G1" type="number" style="width:90%;">
+    <input id="edit-s1g2" placeholder="S1 G2" type="number" style="width:90%;">
+    <input id="edit-s1g3" placeholder="S1 G3" type="number" style="width:90%;">
+    <input id="edit-s2g1" placeholder="S2 G1" type="number" style="width:90%;">
+    <input id="edit-s2g2" placeholder="S2 G2" type="number" style="width:90%;">
+    <input id="edit-s2g3" placeholder="S2 G3" type="number" style="width:90%;">
+    <input id="edit-s3g1" placeholder="S3 G1" type="number" style="width:90%;">
+    <input id="edit-s3g2" placeholder="S3 G2" type="number" style="width:90%;">
+    <input id="edit-s3g3" placeholder="S3 G3" type="number" style="width:90%;">
+  </div>
+
+  <button class="btn" onclick="editPlayer()">Edit Player</button>
+
+  <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
+  <h4 style="color:white;margin:5px 0;">Add New Player</h4>
+
+  <input id="add-ign" placeholder="Enter IGN" style="width:98%;margin-bottom:5px;">
+  <input id="add-id" placeholder="Enter ID" style="width:98%;margin-bottom:5px;">
+
+  <!-- Stages & Games -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px;">
+    <input id="add-s1g1" placeholder="S1 G1" type="number" style="width:90%;">
+    <input id="add-s1g2" placeholder="S1 G2" type="number" style="width:90%;">
+    <input id="add-s1g3" placeholder="S1 G3" type="number" style="width:90%;">
+    <input id="add-s2g1" placeholder="S2 G1" type="number" style="width:90%;">
+    <input id="add-s2g2" placeholder="S2 G2" type="number" style="width:90%;">
+    <input id="add-s2g3" placeholder="S2 G3" type="number" style="width:90%;">
+    <input id="add-s3g1" placeholder="S3 G1" type="number" style="width:90%;">
+    <input id="add-s3g2" placeholder="S3 G2" type="number" style="width:90%;">
+    <input id="add-s3g3" placeholder="S3 G3" type="number" style="width:90%;">
+  </div>
+
+  <button class="btn" onclick="addPlayer()">Add Player</button>
+
+  <hr style="border:none;height:1px;background:rgba(255,255,255,0.1);margin:8px 0;">
+</div>
+<h4 style="color:white;margin:5px 0;">Load previous renderAll</h4>
+<button class="btn" onclick="showRenderAllHistory()">View History</button>
+<div id="renderall-history" style="max-height:200px; overflow:auto; margin-top:5px; color:white;"></div>
+<button id="reset-renderall" style="
+    padding: 6px 10px;
+    margin: 4px;
+    border-radius: 6px;
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+">Reset RenderAll</button>
+
 
   </div>
 </div>
@@ -447,7 +491,7 @@ let players = JSON.parse(localStorage.getItem("players")) || {};
 // ------------------- Game constants -------------------
 const HS_MIN = 0;       // minimum highscore
 const HS1_MAX = 500;  
-const HS_MAX = 200;     // maximum highscore
+const HS_MAX = 150;     // maximum highscore
 const TIME_MIN = 0;     // minimum time
 const S1_MAX_TIME = 20; // Stage 1 max time in minutes
 const S2_MAX_TIME = 20; // Stage 2 max time in minutes
@@ -636,7 +680,7 @@ let allPlayers = Object.values(players);
   });
 
 
-  // 🆕 total participants
+    // 🆕 total participants
   document.getElementById('total-players').innerText = allPlayers.length;
 
   document.getElementById('m1').innerText = allPlayers[0] ? `${allPlayers[0].ign} (${allPlayers[0].final.score}%)` : '—';
@@ -653,13 +697,15 @@ let allPlayers = Object.values(players);
     playerNode.innerHTML = `<div><strong>${r.ign}</strong><div class="mini">ID: ${r.id||'-'} - Score: ${r.final.score}%</div></div>
       <button class="btn ghost" onclick="toggleDetails(event, ${i})">Details</button>`;
 
+
     const details = document.createElement('div'); details.className='stage-details';
     let stageHtml = `<table>
       <tr><td colspan="2"><strong>Player ID:</strong> ${r.id||'-'}</td></tr>`;
     for(let s=1;s<=3;s++){
   const st = r.stages[s]||{};
   stageHtml += `<tr><td colspan="2"><strong>Stage ${s}</strong></td></tr>
-    <tr><td>Stage Score</td><td>${st.stageScore||'-'}%</td></tr>
+<tr><td>Final Score</td><td>${st.stageFinal != null ? st.stageFinal + '%' : '-'}</td></tr>
+
     <tr><td>G1</td><td>${st.raw ? st.raw.g1+" pts" : '-'}</td></tr>
    <tr><td>G2</td><td>${
   st.raw 
@@ -679,48 +725,158 @@ let allPlayers = Object.values(players);
 
     div.appendChild(pos); div.appendChild(playerNode); div.appendChild(details);
     rankList.appendChild(div);
+// At the end of renderAll():
+saveRenderAllHistory();
   }
 }
+
+
+function saveRenderAllHistory() {
+    let history = JSON.parse(localStorage.getItem("renderall")) || [];
+    const rankList = document.getElementById('rank-list');
+    const snapshot = {
+        timestamp: Date.now(),
+        html: rankList.innerHTML,
+        totalPlayers: rankList.children.length
+    };
+    history.push(snapshot);
+    localStorage.setItem("renderall", JSON.stringify(history));
+    console.log(`💾 renderAll saved. Total players: ${snapshot.totalPlayers}`);
+}
+
+function showRenderAllHistory() {
+    const historyContainer = document.getElementById("renderall-history");
+    historyContainer.innerHTML = '';
+
+    const history = JSON.parse(localStorage.getItem("renderall")) || [];
+    if (history.length === 0) {
+        historyContainer.innerHTML = "<i>No renderAll history found.</i>";
+        return;
+    }
+
+    // Group by time (HH:MM)
+    const grouped = {};
+    history.forEach(entry => {
+        const timeStr = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Keep the entry with the highest totalPlayers for that time
+        if (!grouped[timeStr] || entry.totalPlayers > grouped[timeStr].totalPlayers) {
+            grouped[timeStr] = entry;
+        }
+    });
+
+    // Sort keys (time strings) ascending
+    const sortedTimes = Object.keys(grouped).sort((a, b) => {
+        const [ha, ma] = a.split(':').map(Number);
+        const [hb, mb] = b.split(':').map(Number);
+        return ha !== hb ? ha - hb : ma - mb;
+    });
+
+    // Create one button per time
+    sortedTimes.forEach(timeStr => {
+        const entry = grouped[timeStr];
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.margin = '4px';
+        btn.style.padding = '6px 10px';
+        btn.style.borderRadius = '6px';
+        btn.style.cursor = 'pointer';
+        btn.style.background = '#4a4a8c';
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.fontSize = '14px';
+
+        btn.innerText = `${timeStr} - ${entry.totalPlayers} players`;
+
+        btn.onclick = () => {
+            document.getElementById('rank-list').innerHTML = entry.html;
+            console.log(`📂 Loaded snapshot for ${timeStr}`);
+        };
+
+        historyContainer.appendChild(btn);
+    });
+}
+
+
 
 
 ////5 JSONBIN functions
 
 
 // ------------------- Save to JSONBin with merge -------------------
-async function saveToJSONBin(ign=null) {
+// 🔹 Fail-safe save to JSONBin// 🔹 Fail-safe save to JSONBin
+async function saveToJSONBin() {
   try {
     console.log("🔄 Saving to JSONBin...", players);
 
-    // 1️⃣ Load current JSONBin content first
+    // 1. Load current JSONBin content first
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { "X-Master-Key": MASTER_KEY }
     });
     const data = await res.json();
-    const existing = data.record.rankings || [];
+    const existing = data.record || {};
 
-    // 2️⃣ Convert to object for easy merging by IGN
-    let merged = {};
-    existing.forEach(p => { if(p.ign) merged[p.ign] = p; });
-    Object.values(players).forEach(p => { if(p.ign) merged[p.ign] = p; });
+    // 2. Merge local + server
+    const merged = { ...existing, ...players };
 
-    // 3️⃣ Convert merged object back to array
-    const mergedArray = Object.values(merged);
+    // 3. Sanity check – merged must not shrink
+    if (Object.keys(merged).length < Object.keys(existing).length) {
+      alert("❌ Error saving online, refresh the page later");
+      console.warn("Save aborted: merged dataset smaller than server data");
+      return;
+    }
 
-    // 4️⃣ Save back using PUT (JSONBin requires PUT)
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    // 4. Try to PUT merged data
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
+        "X-Master-Key": MASTER_KEY,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({ rankings: mergedArray })
+      body: JSON.stringify(merged)
     });
 
-    console.log("✅ JSONBin saved successfully!");
-  } catch(err) {
-    console.error("❌ Error saving to JSONBin:", err);
+    // 5. If PUT fails, restore old data
+    if (!putRes.ok) {
+      console.error("❌ PUT failed:", await putRes.text());
+
+      // 🔄 Restore original data immediately
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: "PUT",
+        headers: {
+          "X-Master-Key": MASTER_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(existing)
+      });
+
+      alert("❌ Error saving online, refresh the page later");
+      return;
+    }
+
+    console.log("✅ Saved to JSONBin successfully");
+
+  } catch (err) {
+    console.error("❌ Exception while saving:", err);
+
+    // Best effort: restore old data if possible
+    try {
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: "PUT",
+        headers: {
+          "X-Master-Key": MASTER_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(existing)
+      });
+    } catch (restoreErr) {
+      console.error("⚠️ Restore also failed:", restoreErr);
+    }
+
+    alert("❌ Error saving online, refresh the page later");
   }
 }
+
 
 // ------------------- Load from JSONBin -------------------
 async function loadFromJSONBin() {
@@ -770,15 +926,14 @@ settingsIcon.addEventListener("click", () => {
 
 // Delete all players
 // Delete all players (local + JSONBin)
+
+
 async function deleteAllPlayers() {
   if (!confirm("⚠️ Are you sure you want to DELETE ALL players? This cannot be undone.")) {
     return;
   }
 
   try {
-    // 1️⃣ Clear local memory and localStorage
-    players = {};
-    localStorage.removeItem("players");
 
     // 2️⃣ Save empty array to JSONBin
     await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
@@ -800,178 +955,251 @@ async function deleteAllPlayers() {
 }
 
 
-// Delete specific player by IGN & ID
+// 🔹 Delete specific player by IGN & ID (remote only, never local)
 async function deletePlayer() {
   const ign = document.getElementById("delete-ign").value.trim();
   const id = document.getElementById("delete-id").value.trim();
 
-  if (!ign || !id) { alert("Enter IGN & ID"); return; }
+  if (!ign || !id) { 
+    alert("Enter IGN & ID"); 
+    return; 
+  }
 
   try {
-    // 1) Load current remote list
+    // 1) Load current remote data
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { "X-Master-Key": MASTER_KEY }
     });
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch JSONBin (status ${res.status})`);
-    }
+    if (!res.ok) throw new Error(`Failed to fetch JSONBin (status ${res.status})`);
 
     const data = await res.json();
-    const existing = Array.isArray(data.record?.rankings) ? data.record.rankings : [];
+    const existing = data.record || {};
 
-    // 2) Find remote & local occurrences
-    const remoteIdx = existing.findIndex(p => p.ign === ign && String(p.id) === String(id));
-    const localExists = players[ign] && String(players[ign].id) === String(id);
+    // 2) Find the player in remote
+    const playerKey = Object.keys(existing).find(
+      key => existing[key].ign === ign && String(existing[key].id) === String(id)
+    );
 
-    if (remoteIdx === -1 && !localExists) {
-      alert("❌ Player not found (local or remote).");
+    if (!playerKey) {
+      alert("❌ Player not found online.");
       return;
     }
 
-    // 3) Remove from remote if present
-    if (remoteIdx !== -1) {
-      existing.splice(remoteIdx, 1);
-      const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    // 3) Remove the player from remote copy
+    delete existing[playerKey];
+
+    // 4) Try to PUT updated data
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": MASTER_KEY
+      },
+      body: JSON.stringify(existing)
+    });
+
+    // 5) If PUT failed → restore old untouched data
+    if (!putRes.ok) {
+      console.error("❌ PUT failed:", await putRes.text());
+
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "X-Master-Key": MASTER_KEY
         },
-        body: JSON.stringify({ rankings: existing })
+        body: JSON.stringify(data.record) // restore old safe copy
       });
 
-      if (!putRes.ok) {
-        const text = await putRes.text();
-        throw new Error(`Failed to update JSONBin (status ${putRes.status}): ${text}`);
-      }
+      alert("❌ Error deleting online, refresh the page later");
+      return;
     }
 
-    // 4) Remove local copy if present
-    if (localExists) {
-      delete players[ign];
-      localStorage.setItem("players", JSON.stringify(players));
-    }
-
-    // 5) Refresh UI
+    // ✅ Success
+    console.log(`✅ Player ${ign} removed from JSONBin`);
     renderAll();
-    alert(`✅ Player ${ign} deleted.`);
+    alert(`✅ Player ${ign} deleted online.`);
+
   } catch (err) {
     console.error("❌ Error deleting player:", err);
-    alert("❌ Failed to delete player. See console for details.");
+    alert("❌ Error deleting online, refresh the page later");
   }
 }
 
 
 
-
-// Edit player
-async function editPlayer() {
-  const ign = document.getElementById("edit-ign").value.trim();
-  const field = document.getElementById("edit-field").value;
-  const value = document.getElementById("edit-value").value.trim();
-
-  if (!ign || !players[ign]) { alert("Player not found!"); return; }
-
-  if (field === "ign") {
-    players[value] = { ...players[ign], ign: value };
-    delete players[ign];
-  } else if (field === "id") {
-    players[ign].id = value;
-  } else if (field === "stages") {
-    const match = value.match(/Stage\s*(\d+)\s*Game\s*(\d+)\s*Score\s*(\d+)/i);
-    if (match) {
-      const stage = Number(match[1]);
-      const game = Number(match[2]);
-      const score = Number(match[3]);
-      players[ign].stages[stage] = players[ign].stages[stage] || { raw: {} };
-      players[ign].stages[stage].raw["g" + game] = score;
-    } else {
-      try {
-        players[ign].stages = JSON.parse(value);
-      } catch { alert("Invalid stage input!"); return; }
+document.getElementById('reset-renderall').addEventListener('click', () => {
+    if(confirm("Are you sure you want to clear all renderAll history?")) {
+        localStorage.removeItem("renderall");
+        document.getElementById("renderall-history").innerHTML = "<i>No renderAll history found.</i>";
+        console.log("🗑️ renderAll history cleared.");
     }
-  } else if (field === "final") {
-    try {
-      players[ign].final = JSON.parse(value);
-    } catch { alert("Invalid final JSON!"); return; }
-  }
-
-  computePlayer(ign);
-  await saveToJSONBin();
-  renderAll();
-  alert("✏️ Player updated.");
-}
+});
 
 
+// 🔹 Add Player (safe merge, error rollback)
 async function addPlayer() {
   const ign = document.getElementById("add-ign").value.trim();
   const id = document.getElementById("add-id").value.trim();
-  const input = document.getElementById("add-stages").value.trim();
 
-  if (!ign || !id) { alert("IGN & ID required!"); return; }
-
-  // parse "Stage 1 Game 2 Score 55"
-  let stages = {};
-  if (input) {
-    const match = input.match(/Stage\s*(\d+)\s*Game\s*(\d+)\s*Score\s*(\d+)/i);
-    if (match) {
-      const stage = Number(match[1]);
-      const game = Number(match[2]);
-      const score = Number(match[3]);
-      stages[stage] = { raw: { ["g" + game]: score } };
-    } else {
-      try { stages = JSON.parse(input); } catch { alert("Invalid input!"); return; }
+  // 9 fields for 3 stages × 3 games
+  const stageInputs = [];
+  for (let s = 1; s <= 3; s++) {
+    for (let g = 1; g <= 3; g++) {
+      const val = document.getElementById(`add-s${s}g${g}`).value.trim();
+      stageInputs.push({ s, g, val });
     }
   }
 
-  players[ign] = { ign, id, stages, final: {} };
-  computePlayer(ign);
-  await saveToJSONBin();
-  renderAll();
-  alert("✅ Player added.");
-}
+  if (!ign || !id) {
+    alert("IGN & ID required!");
+    return;
+  }
 
-// ------------------- Auto-refresh leaderboard -------------------
-async function autoRefreshLeaderboard(){
-    try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers:{ "X-Master-Key": MASTER_KEY }
-        });
-        const data = await res.json();
-        const list = data.record.rankings || [];
-
-        // Merge old players with new ones
-        list.forEach(p => {
-            players[p.ign] = p; // this overwrites only if same IGN exists
-        });
-
-        Object.keys(players).forEach(computePlayer);
-        renderAll();
-    } catch(err){
-        console.error("Failed auto-refresh JSONBin", err);
-    }
-}
-
-
-async function loadFromJSONBinRaw() {
   try {
-    const response = await fetch("https://api.jsonbin.io/v3/b/68b9033e43b1c97be9361901/latest", {
-      method: "GET",
-      headers: {
-        "X-Master-Key": JSONBIN_API_KEY
-      }
+    // 1) Fetch current JSONBin
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { "X-Master-Key": MASTER_KEY }
+    });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    const data = await res.json();
+    const existing = data.record || {};
+
+    // 2) Merge new player with old set
+    const updated = { ...existing };
+    updated[ign] = updated[ign] || { ign, id, stages: {}, final: {} };
+
+    // 3) Update only filled fields
+    stageInputs.forEach(({ s, g, val }) => {
+      if (val === "") return; // keep old value
+      const num = val.toLowerCase() === "null" ? null : Number(val);
+      updated[ign].stages[s] = updated[ign].stages[s] || { raw: {} };
+      updated[ign].stages[s].raw["g" + g] = num;
     });
 
-    if (!response.ok) throw new Error("Failed to fetch from JSONBin");
+    // 4) PUT merged data
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: { 
+        "X-Master-Key": MASTER_KEY,
+        "Content-Type": "application/json" 
+      },
+      body: JSON.stringify(updated)
+    });
 
-    const data = await response.json();
-    return data.record;
-  } catch (error) {
-    console.error("Error loading raw data from JSONBin:", error);
-    return {};
+    if (!putRes.ok) {
+      // rollback
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: "PUT",
+        headers: {
+          "X-Master-Key": MASTER_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(existing)
+      });
+      alert("❌ Error saving online, refresh the page later");
+      return;
+    }
+
+    // 5) Update local & UI
+    players = updated;
+    localStorage.setItem("players", JSON.stringify(players));
+    computePlayer(ign);
+    renderAll();
+    alert("✅ Player added/updated.");
+
+  } catch (err) {
+    console.error("Add failed:", err);
+    alert("❌ Error saving online, refresh the page later");
   }
 }
+
+
+
+// 🔹 Edit Player (safe merge, error rollback)
+async function editPlayer() {
+  const ign = document.getElementById("edit-ign").value.trim();
+  const id = document.getElementById("edit-id").value.trim();
+
+  // 9 fields for 3 stages × 3 games
+  const stageInputs = [];
+  for (let s = 1; s <= 3; s++) {
+    for (let g = 1; g <= 3; g++) {
+      const val = document.getElementById(`edit-s${s}g${g}`).value.trim();
+      stageInputs.push({ s, g, val });
+    }
+  }
+
+  if (!ign || !id) {
+    alert("IGN & ID required!");
+    return;
+  }
+
+  try {
+    // 1) Fetch current JSONBin
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { "X-Master-Key": MASTER_KEY }
+    });
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    const data = await res.json();
+    const existing = data.record || {};
+
+    if (!existing[ign] || String(existing[ign].id) !== id) {
+      alert("❌ Player not found online.");
+      return;
+    }
+
+    // 2) Copy old player
+    const updated = { ...existing };
+
+    // 3) Update only filled fields
+    stageInputs.forEach(({ s, g, val }) => {
+      if (val === "") return; // leave unchanged
+      const num = val.toLowerCase() === "null" ? null : Number(val);
+      updated[ign].stages[s] = updated[ign].stages[s] || { raw: {} };
+      updated[ign].stages[s].raw["g" + g] = num;
+    });
+
+    // 4) PUT merged data
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers: { 
+        "X-Master-Key": MASTER_KEY,
+        "Content-Type": "application/json" 
+      },
+      body: JSON.stringify(updated)
+    });
+
+    if (!putRes.ok) {
+      // rollback
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: "PUT",
+        headers: {
+          "X-Master-Key": MASTER_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(existing)
+      });
+      alert("❌ Error saving online, refresh the page later");
+      return;
+    }
+
+    // 5) Update local & UI
+    players = updated;
+    localStorage.setItem("players", JSON.stringify(players));
+    computePlayer(ign);
+    renderAll();
+    alert("✏️ Player updated.");
+
+  } catch (err) {
+    console.error("Edit failed:", err);
+    alert("❌ Error saving online, refresh the page later");
+  }
+}
+
+
+// ------------------- Auto-refresh leaderboard -------------------
 
 
 
@@ -979,7 +1207,8 @@ async function mergeLocalToJSONBin() {
   try {
     const localData = JSON.parse(localStorage.getItem("players")) || {};
     if (Object.keys(localData).length === 0) {
-      console.log("📦 No local data found to merge.");
+alert("📦 local data not showing. Refresh the page");
+
       return;
     }
 
