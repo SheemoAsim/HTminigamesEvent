@@ -804,79 +804,40 @@ function showRenderAllHistory() {
 
 
 // ------------------- Save to JSONBin with merge -------------------
-// 🔹 Fail-safe save to JSONBin// 🔹 Fail-safe save to JSONBin
-async function saveToJSONBin() {
+async function saveToJSONBin(ign=null) {
   try {
     console.log("🔄 Saving to JSONBin...", players);
 
-    // 1. Load current JSONBin content first
+    // 1️⃣ Load current JSONBin content first
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { "X-Master-Key": MASTER_KEY }
     });
     const data = await res.json();
-    const existing = data.record || {};
+    const existing = data.record.rankings || [];
 
-    // 2. Merge local + server
-    const merged = { ...existing, ...players };
+    // 2️⃣ Convert to object for easy merging by IGN
+    let merged = {};
+    existing.forEach(p => { if(p.ign) merged[p.ign] = p; });
+    Object.values(players).forEach(p => { if(p.ign) merged[p.ign] = p; });
 
-    // 3. Sanity check – merged must not shrink
-    if (Object.keys(merged).length < Object.keys(existing).length) {
-      alert("❌ Error saving online, refresh the page later");
-      console.warn("Save aborted: merged dataset smaller than server data");
-      return;
-    }
+    // 3️⃣ Convert merged object back to array
+    const mergedArray = Object.values(merged);
 
-    // 4. Try to PUT merged data
-    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    // 4️⃣ Save back using PUT (JSONBin requires PUT)
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: "PUT",
       headers: {
-        "X-Master-Key": MASTER_KEY,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Master-Key": MASTER_KEY
       },
-      body: JSON.stringify(merged)
+      body: JSON.stringify({ rankings: mergedArray })
     });
 
-    // 5. If PUT fails, restore old data
-    if (!putRes.ok) {
-      console.error("❌ PUT failed:", await putRes.text());
-
-      // 🔄 Restore original data immediately
-      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-        method: "PUT",
-        headers: {
-          "X-Master-Key": MASTER_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(existing)
-      });
-
-      alert("❌ Error saving online, refresh the page later");
-      return;
-    }
-
-    console.log("✅ Saved to JSONBin successfully");
-
-  } catch (err) {
-    console.error("❌ Exception while saving:", err);
-
-    // Best effort: restore old data if possible
-    try {
-      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-        method: "PUT",
-        headers: {
-          "X-Master-Key": MASTER_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(existing)
-      });
-    } catch (restoreErr) {
-      console.error("⚠️ Restore also failed:", restoreErr);
-    }
-
-    alert("❌ Error saving online, refresh the page later");
+    console.log("✅ JSONBin saved successfully!");
+  } catch(err) {
+    console.error("❌ Error saving to JSONBin:", err);
   }
 }
-
 
 // ------------------- Load from JSONBin -------------------
 async function loadFromJSONBin() {
