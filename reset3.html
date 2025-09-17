@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset All Games Data</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #1e1e1e;
+    color: white;
+    font-family: Arial, sans-serif;
+    flex-direction: column;
+  }
+
+  button {
+    padding: 15px 30px;
+    font-size: 20px;
+    border: none;
+    border-radius: 10px;
+    background-color: pink;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+  }
+
+  button:hover {
+    background-color: #B9650B;
+    transform: scale(1.05);
+  }
+
+  h1 {
+    margin-bottom: 30px;
+  }
+
+  #overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+  }
+</style>
+</head>
+<body>
+
+<div id="content">
+  <h1> 𝗔𝗽𝗼𝗹𝗼𝗴𝘆 & 𝗚𝗶𝗳𝘁 🎁 <br>(You have another chance to play again until sept.19) </h1>
+
+  <button onclick="clearAllGamesStorage()">Reset Retries ✨</button>
+</div>
+
+this page only opens once!!
+<div id="overlay" style="display:none;">
+  ❌ This page can no longer be used.
+</div>
+
+<script>
+function clearAllGamesStorage() {
+    // ✅ Game 1: Crops Collector
+    localStorage.removeItem("gameRetries");
+    localStorage.removeItem("gameHighScore");
+
+    // ✅ Game 2: Tile Twist
+    localStorage.removeItem("game2Retries");
+    localStorage.removeItem("game2HighScore");
+
+    // ✅ Game 3: Sliding Puzzle
+    localStorage.removeItem("game3Retries");
+    localStorage.removeItem("game3HighScore");
+
+    // ✅ Game 4: Find the Different Item
+    localStorage.removeItem("findDiffHighScore");
+    localStorage.removeItem("findDiffRetries");
+
+    // ✅ Game 5: Guess the NPC
+    localStorage.removeItem("snapMatchHighScore");
+    localStorage.removeItem("snapMatchRetries");
+
+    // ✅ Game 6: Memory Game
+    localStorage.removeItem("memoryHighScore");
+    localStorage.removeItem("memoryRetries");
+
+    // ✅ Game 7: Crops/Simon Game
+    localStorage.removeItem("simonHighScore");
+    localStorage.removeItem("farmRetries");
+    localStorage.removeItem("gameHighScore");
+
+    // ✅ Game 8: Another highScore/retries if needed
+    localStorage.removeItem("highScore");
+    localStorage.removeItem("retries");
+
+    // ✅ Game 9: Tile Shooter (example)
+    localStorage.removeItem("ts_high");
+    localStorage.removeItem("ts_retries");
+
+    alert("✅ your second chance starts now!");
+}
+
+/* 🔒 Limit page usage to 2 loads */
+(function limitLoads() {
+  let loads = localStorage.getItem("resetPageLoads2");
+  loads = loads ? parseInt(loads, 10) : 0;
+
+  if (loads >= 1) {
+    // After 2 loads → block page
+    document.getElementById("content").style.display = "none";
+    document.getElementById("overlay").style.display = "flex";
+
+    // Optional: try to auto-close tab (works only if opened by script)
+    setTimeout(() => window.close(), 2000);
+  } else {
+    // Count this load
+    localStorage.setItem("resetPageLoads2", loads + 1);
+  }
+})();
+</script>
+
+</body>
+</html>
