@@ -108,7 +108,7 @@ function clearAllGamesStorage() {
 
 /* 🔒 Limit page usage to 2 loads */
 (function limitLoads() {
-  let loads = localStorage.getItem("resetPageLoads2");
+  let loads = localStorage.getItem("Reset3");
   loads = loads ? parseInt(loads, 10) : 0;
 
   if (loads >= 1) {
@@ -120,7 +120,7 @@ function clearAllGamesStorage() {
     setTimeout(() => window.close(), 2000);
   } else {
     // Count this load
-    localStorage.setItem("resetPageLoads2", loads + 1);
+    localStorage.setItem("Reset3", loads + 1);
   }
 })();
 </script>
