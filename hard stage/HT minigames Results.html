@@ -652,8 +652,6 @@ async function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
   // Recompute player score
   computePlayer(ign);
 
-  // Save with merge to JSONBin
-  await saveToJSONBin();
 
   // Determine return message
   const msg = (players[ign].stages[stage].submittedAt === Date.now()) ? 
@@ -739,24 +737,6 @@ allPlayers.sort((a, b) => {
 ////5 JSONBIN functions
 
 // ------------------- Save to JSONBin -------------------
-// Save always as an array
-async function saveToJSONBin(){
-  try {
-console.log("🔄 Saving to JSONBin...", players); // DEBUG
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method:"PUT",
-      headers:{
-        "Content-Type":"application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: Object.values(players) })
- // save as array
-    });
-  } catch(err){
-    console.error(err);
-    // ✅ Go back to the last 
-
-
 
 
   }
