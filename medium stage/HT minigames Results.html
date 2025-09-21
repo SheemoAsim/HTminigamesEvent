@@ -662,8 +662,6 @@ async function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
   return {ok:true, msg};
 }
 
-
-
 ////4
 function renderAll(){
   const rankList = document.getElementById('rank-list');
@@ -734,146 +732,57 @@ allPlayers.sort((a, b) => {
 
     div.appendChild(pos); div.appendChild(playerNode); div.appendChild(details);
     rankList.appendChild(div);
-// At the end of renderAll():
-saveRenderAllHistory();
   }
 }
-
-
-function saveRenderAllHistory() {
-    let history = JSON.parse(localStorage.getItem("renderall")) || [];
-    const rankList = document.getElementById('rank-list');
-    const snapshot = {
-        timestamp: Date.now(),
-        html: rankList.innerHTML,
-        totalPlayers: rankList.children.length
-    };
-    history.push(snapshot);
-    localStorage.setItem("renderall", JSON.stringify(history));
-    console.log(`💾 renderAll saved. Total players: ${snapshot.totalPlayers}`);
-}
-
-function showRenderAllHistory() {
-    const historyContainer = document.getElementById("renderall-history");
-    historyContainer.innerHTML = '';
-
-    const history = JSON.parse(localStorage.getItem("renderall")) || [];
-    if (history.length === 0) {
-        historyContainer.innerHTML = "<i>No renderAll history found.</i>";
-        return;
-    }
-
-    // Group by time (HH:MM)
-    const grouped = {};
-    history.forEach(entry => {
-        const timeStr = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        // Keep the entry with the highest totalPlayers for that time
-        if (!grouped[timeStr] || entry.totalPlayers > grouped[timeStr].totalPlayers) {
-            grouped[timeStr] = entry;
-        }
-    });
-
-    // Sort keys (time strings) ascending
-    const sortedTimes = Object.keys(grouped).sort((a, b) => {
-        const [ha, ma] = a.split(':').map(Number);
-        const [hb, mb] = b.split(':').map(Number);
-        return ha !== hb ? ha - hb : ma - mb;
-    });
-
-    // Create one button per time
-    sortedTimes.forEach(timeStr => {
-        const entry = grouped[timeStr];
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.style.margin = '4px';
-        btn.style.padding = '6px 10px';
-        btn.style.borderRadius = '6px';
-        btn.style.cursor = 'pointer';
-        btn.style.background = '#4a4a8c';
-        btn.style.color = '#fff';
-        btn.style.border = 'none';
-        btn.style.fontSize = '14px';
-
-        btn.innerText = `${timeStr} - ${entry.totalPlayers} players`;
-
-        btn.onclick = () => {
-            document.getElementById('rank-list').innerHTML = entry.html;
-            console.log(`📂 Loaded snapshot for ${timeStr}`);
-        };
-
-        historyContainer.appendChild(btn);
-    });
-}
-
-
 
 
 ////5 JSONBIN functions
 
-
-// ------------------- Save to JSONBin with merge -------------------
-async function saveToJSONBin(ign=null) {
+// ------------------- Save to JSONBin -------------------
+// Save always as an array
+async function saveToJSONBin(){
   try {
-    console.log("🔄 Saving to JSONBin...", players);
-
-    // 1️⃣ Load current JSONBin content first
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const data = await res.json();
-    const existing = data.record.rankings || [];
-
-    // 2️⃣ Convert to object for easy merging by IGN
-    let merged = {};
-    existing.forEach(p => { if(p.ign) merged[p.ign] = p; });
-    Object.values(players).forEach(p => { if(p.ign) merged[p.ign] = p; });
-
-    // 3️⃣ Convert merged object back to array
-    const mergedArray = Object.values(merged);
-
-    // 4️⃣ Save back using PUT (JSONBin requires PUT)
+console.log("🔄 Saving to JSONBin...", players); // DEBUG
     await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json",
         "X-Master-Key": MASTER_KEY
       },
-      body: JSON.stringify({ rankings: mergedArray })
+      body: JSON.stringify({ rankings: Object.values(players) })
+ // save as array
     });
+  } catch(err){
+    console.error(err);
+    // ✅ Go back to the last 
 
-    console.log("✅ JSONBin saved successfully!");
-  } catch(err) {
-    console.error("❌ Error saving to JSONBin:", err);
+
+
+
   }
 }
 
-// ------------------- Load from JSONBin -------------------
-async function loadFromJSONBin() {
-  try {
+// Load and rebuild players object
+async function loadFromJSONBin(){
+  try{
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
+      headers:{ "X-Master-Key": MASTER_KEY }
     });
     const data = await res.json();
     const list = data.record.rankings || [];
 
     players = {};
-    list.forEach(p => {
-      if(p.ign) players[p.ign] = p;
+    list.forEach(p=>{
+      players[p.ign] = p;
     });
-
     Object.keys(players).forEach(computePlayer);
     renderAll();
-document.getElementById("loading-overlay").style.display="none";
-    console.log("✅ JSONBin loaded successfully!");
-  } catch(err) {
-    console.error("❌ Failed loading JSONBin", err);
+  } catch(err){
+    console.error("Failed loading JSONBin", err);
   }
 }
 
-
-
-///6/////
+///5/////
 
 
 
@@ -895,271 +804,60 @@ settingsIcon.addEventListener("click", () => {
 });
 
 // Delete all players
-// Delete all players (local + JSONBin)
-
-
-async function deleteAllPlayers() {
-  if (!confirm("⚠️ Are you sure you want to DELETE ALL players? This cannot be undone.")) {
-    return;
-  }
-
-  try {
-
-    // 2️⃣ Save empty array to JSONBin
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: [] })
-    });
-
-    // 3️⃣ Refresh UI
+function deleteAllPlayers(){
+  if(confirm("Are you sure you want to delete ALL players?")){
+    players = {};
+    localStorage.setItem("players", JSON.stringify(players));
+    saveToJSONBin();
     renderAll();
-    alert("✅ All players deleted successfully!");
-  } catch (err) {
-    console.error("❌ Error deleting all players:", err);
-    alert("❌ Failed to delete all players. Check console.");
+    alert("All players deleted.");
   }
 }
 
-
-// Utility: process input values
-// Utility: process input values
-function handleInput(value, oldValue) {
-  if (value === null || value === undefined) return oldValue; // skip null/undefined
-  if (String(value).trim() === "") return oldValue;           // empty → keep old
-  if (String(value).trim().toLowerCase() === "null") return "-"; // "null" → "-"
-  return isNaN(value) ? String(value).trim() : +value;        // number stays number
+// Delete specific player by IGN & ID
+function deletePlayer(){
+  const ign = document.getElementById("delete-ign").value.trim();
+  const id = document.getElementById("delete-id").value.trim();
+  if(!ign || !id){ alert("Enter IGN and ID."); return; }
+  if(players[ign] && players[ign].id === id){
+    delete players[ign];
+    localStorage.setItem("players", JSON.stringify(players));
+    saveToJSONBin();
+    renderAll();
+    alert(`Player ${ign} deleted.`);
+  } else alert("Player not found or ID mismatch.");
 }
 
+// Edit player
+function editPlayer(){
+  const ign = document.getElementById("edit-ign").value.trim();
+  const field = document.getElementById("edit-field").value.trim();
+  const value = document.getElementById("edit-value").value.trim();
+  if(!ign || !field || !value){ alert("Enter all fields."); return; }
 
-// ---------------- Add Player ----------------
-async function addPlayer() {
-  try {
-    // 1️⃣ Fetch latest
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const data = await res.json();
-    const existing = data.record.rankings || [];
-
-    // 2️⃣ Convert to object
-    let merged = {};
-    existing.forEach(p => { if (p.ign) merged[p.ign] = p; });
-
-    const ign = document.getElementById("add-ign").value.trim();
-    if (!ign) {
-      alert("IGN is required!");
-      return;
-    }
-    if (merged[ign]) {
-      alert("Player already exists!");
-      return;
-    }
-
-    const id = document.getElementById("add-id").value.trim();
-    merged[ign] = {
-      ign,
-      id: handleInput(id, "ID-" + Math.floor(Math.random() * 9999)),
-      stages: {
-        1: { raw: {
-          g1: handleInput(document.getElementById("add-s1g1").value, 0),
-          g2: handleInput(document.getElementById("add-s1g2").value, 0),
-          g3: handleInput(document.getElementById("add-s1g3").value, 0)
-        }},
-        2: { raw: {
-          g1: handleInput(document.getElementById("add-s2g1").value, 0),
-          g2: handleInput(document.getElementById("add-s2g2").value, 0),
-          g3: handleInput(document.getElementById("add-s2g3").value, 0)
-        }},
-        3: { raw: {
-          g1: handleInput(document.getElementById("add-s3g1").value, 0),
-          g2: handleInput(document.getElementById("add-s3g2").value, 0),
-          g3: handleInput(document.getElementById("add-s3g3").value, 0)
-        }}
-      },
-      final: {}
-    };
-
-    computePlayer(ign);
-
-    // 3️⃣ Save merged
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: Object.values(merged) })
-    });
-
-    alert("✅ Player added successfully!");
-  } catch (err) {
-    console.error("❌ Error adding player:", err);
-    alert("Something went wrong. No data was changed.");
-  }
-}
-
-// ---------------- Edit Player ----------------
-async function editPlayer() {
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const data = await res.json();
-    const existing = data.record.rankings || [];
-
-    let merged = {};
-    existing.forEach(p => { if (p.ign) merged[p.ign] = p; });
-
-    const ign = document.getElementById("edit-ign").value.trim();
-    if (!merged[ign]) {
-      alert("Player not found!");
-      return;
-    }
-
-    let p = merged[ign];
-    p.id = handleInput(document.getElementById("edit-id").value, p.id);
-
-    for (let s = 1; s <= 3; s++) {
-      const st = p.stages[s] || { raw: {} };
-      st.raw.g1 = handleInput(document.getElementById(`edit-s${s}g1`).value, st.raw.g1 || 0);
-      st.raw.g2 = handleInput(document.getElementById(`edit-s${s}g2`).value, st.raw.g2 || 0);
-      st.raw.g3 = handleInput(document.getElementById(`edit-s${s}g3`).value, st.raw.g3 || 0);
-      p.stages[s] = st;
-    }
-
-    computePlayer(ign);
-    merged[ign] = p;
-
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: Object.values(merged) })
-    });
-
-    alert("✅ Player updated successfully!");
-  } catch (err) {
-    console.error("❌ Error editing player:", err);
-    alert("Something went wrong. No data was changed.");
-  }
-}
-
-// ---------------- Delete Player ----------------
-async function deletePlayer() {
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const data = await res.json();
-    const existing = data.record.rankings || [];
-
-    let merged = {};
-    existing.forEach(p => { if (p.ign) merged[p.ign] = p; });
-
-    const ign = document.getElementById("delete-ign").value.trim();
-    if (!merged[ign]) {
-      alert("Player not found!");
-      return;
-    }
-
-    delete merged[ign];
-
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: Object.values(merged) })
-    });
-
-    alert("✅ Player deleted successfully!");
-  } catch (err) {
-    console.error("❌ Error deleting player:", err);
-    alert("Something went wrong. No data was changed.");
-  }
-}
-
-
-
-// ------------------- Auto-refresh leaderboard -------------------
-
-
-
-async function mergeLocalToJSONBin() {
-  try {
-    const localData = JSON.parse(localStorage.getItem("players")) || {};
-    if (Object.keys(localData).length === 0) {
-      console.log("📦 Local data not showing. Refresh the page");
-      return;
-    }
-
-    console.log("🔁 Merging local data into JSONBin...");
-
-    // 1️⃣ Load current JSONBin data
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const data = await res.json();
-    const existing = data.record.rankings || [];
-
-    // 2️⃣ Convert JSONBin array to object by ign
-    let merged = {};
-    existing.forEach(p => { if (p.ign) merged[p.ign] = p; });
-
-    // 3️⃣ Merge local → JSONBin
-    for (const ign in localData) {
-      const localPlayer = localData[ign];
-      const remotePlayer = merged[ign];
-
-      if (!remotePlayer) {
-        // No such ign in JSONBin → add local
-        merged[ign] = localPlayer;
+  if(players[ign]){
+    try{
+      if(field === "stages" || field === "final"){
+        players[ign][field] = JSON.parse(value); // accept JSON format for complex objects
       } else {
-        // Exists in both → keep newer
-        const localTime = localPlayer.final?.computedAt || 0;
-        const remoteTime = remotePlayer.final?.computedAt || 0;
-
-        if (localTime > remoteTime) {
-          merged[ign] = localPlayer;
-        }
+        players[ign][field] = value; // string for simple fields
       }
+      computePlayer(ign);
+      localStorage.setItem("players", JSON.stringify(players));
+      saveToJSONBin();
+      renderAll();
+      alert(`Player ${ign} updated.`);
+    } catch(e){
+      alert("Invalid value format. For stages/final, enter valid JSON.");
     }
-
-    // 4️⃣ Convert back to array
-    const mergedArray = Object.values(merged);
-
-    // 5️⃣ Save updated result back to JSONBin
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: mergedArray })
-    });
-
-    // 6️⃣ Update global + UI
-    players = merged;
-    Object.keys(players).forEach(computePlayer);
-    renderAll();
-
-    console.log("✅ Local data merged into JSONBin.");
-  } catch (err) {
-    console.error("❌ Failed merging local to JSONBin:", err);
-  }
+  } else alert("Player not found.");
 }
+
+
+
 
 
 // 6------------------- On page load -------------------
-
-
 // Ensure loading overlay disappears after 10 seconds
 setTimeout(() => {
     const overlay = document.getElementById("loading-overlay");
@@ -1168,12 +866,6 @@ setTimeout(() => {
 
 
 window.addEventListener('DOMContentLoaded', async ()=>{
-  // 🔥 Always load fresh data first
-  await mergeLocalToJSONBin(); 
-  await loadFromJSONBin();
-  renderAll();
-
-  // Then check if there’s a staged result in localStorage
   const stageResult = JSON.parse(localStorage.getItem("latestStageResult"));
   if(stageResult){
     addSubmission(
@@ -1185,24 +877,9 @@ window.addEventListener('DOMContentLoaded', async ()=>{
       stageResult.id
     );
     localStorage.removeItem("latestStageResult");
-
-    // Save and re-render after adding new submission
-    await saveToJSONBin();
+  } else {
+    await loadFromJSONBin();
     renderAll();
-  }
-
-  // 🔄 Refresh leaderboard only every 10s
-  setInterval(async ()=>{
-    await loadFromJSONBin();
-    renderLeaderboardOnly(); // only update rankings, not other UI
-  }, 400000);
-});
-
-// Also refresh when returning to the tab
-document.addEventListener("visibilitychange", async () => {
-  if (!document.hidden) {
-    await loadFromJSONBin();
-    renderLeaderboardOnly();
   }
 });
 
