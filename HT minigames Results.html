@@ -476,6 +476,7 @@ overflow-y:auto;
 
 
 
+
 <script>
 const settingsIcon = document.getElementById("settings-icon");
 const settingsPanel = document.getElementById("settings-panel");
@@ -594,7 +595,7 @@ function computePlayer(ign){
             if (s === 1) {
   g1p = pct_highscore(raw.g1, HS_MIN, HS1_MAX);
 
-  // raw.g2 is seconds → convert to minutes for percentage
+  // raw.g2 is seconds â†’ convert to minutes for percentage
   let g2Minutes = raw.g2 / 60;
   g2p = (raw.g2 === 0) ? 0 : pct_time(g2Minutes, S1_MAX_TIME);
 
@@ -603,7 +604,7 @@ function computePlayer(ign){
 } else if (s === 2) {
   g1p = pct_highscore(raw.g1, HS_MIN, HS_MAX);
 
-  // raw.g2 is seconds → convert to minutes for percentage
+  // raw.g2 is seconds â†’ convert to minutes for percentage
   let g2Minutes = raw.g2 / 60;
   g2p = (raw.g2 === 0) ? 0 : pct_time(g2Minutes, S2_MAX_TIME);
 
@@ -683,16 +684,16 @@ allPlayers.forEach(p => {
 allPlayers.sort((a, b) => {
   if (a.final.ready && !b.final.ready) return -1; // a first
   if (!a.final.ready && b.final.ready) return 1;  // b first
-  return b.final.score - a.final.score;           // same group → by score
+  return b.final.score - a.final.score;           // same group â†’ by score
 });
 
 
-    // 🆕 total participants
+    // ðŸ†• total participants
   document.getElementById('total-players').innerText = allPlayers.length;
 
-  document.getElementById('m1').innerText = allPlayers[0] ? `${allPlayers[0].ign} (${allPlayers[0].final.score}%)` : '—';
-  document.getElementById('m2').innerText = allPlayers[1] ? `${allPlayers[1].ign} (${allPlayers[1].final.score}%)` : '—';
-  document.getElementById('m3').innerText = allPlayers[2] ? `${allPlayers[2].ign} (${allPlayers[2].final.score}%)` : '—';
+  document.getElementById('m1').innerText = allPlayers[0] ? `${allPlayers[0].ign} (${allPlayers[0].final.score}%)` : 'â€”';
+  document.getElementById('m2').innerText = allPlayers[1] ? `${allPlayers[1].ign} (${allPlayers[1].final.score}%)` : 'â€”';
+  document.getElementById('m3').innerText = allPlayers[2] ? `${allPlayers[2].ign} (${allPlayers[2].final.score}%)` : 'â€”';
 
   for(let i=0; i<Math.min(allPlayers.length, MAX_PLAYERS_SHOWN); i++){
     const r = allPlayers[i];
@@ -740,27 +741,6 @@ allPlayers.sort((a, b) => {
 
 // ------------------- Save to JSONBin -------------------
 // Save always as an array
-async function saveToJSONBin(){
-  try {
-console.log("🔄 Saving to JSONBin...", players); // DEBUG
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method:"PUT",
-      headers:{
-        "Content-Type":"application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: Object.values(players) })
- // save as array
-    });
-  } catch(err){
-    console.error(err);
-    // ✅ Go back to the last 
-
-
-
-
-  }
-}
 
 // Load and rebuild players object
 async function loadFromJSONBin(){
