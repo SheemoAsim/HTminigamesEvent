@@ -662,8 +662,6 @@ async function addSubmission(ign, stage, g1, g2, g3, id=null, source='url'){
   return {ok:true, msg};
 }
 
-
-
 ////4
 function renderAll(){
   const rankList = document.getElementById('rank-list');
@@ -734,162 +732,57 @@ allPlayers.sort((a, b) => {
 
     div.appendChild(pos); div.appendChild(playerNode); div.appendChild(details);
     rankList.appendChild(div);
-// At the end of renderAll():
-saveRenderAllHistory();
   }
 }
-
-
-function saveRenderAllHistory() {
-    let history = JSON.parse(localStorage.getItem("renderall")) || [];
-    const rankList = document.getElementById('rank-list');
-    const snapshot = {
-        timestamp: Date.now(),
-        html: rankList.innerHTML,
-        totalPlayers: rankList.children.length
-    };
-    history.push(snapshot);
-    localStorage.setItem("renderall", JSON.stringify(history));
-    console.log(`💾 renderAll saved. Total players: ${snapshot.totalPlayers}`);
-}
-
-function showRenderAllHistory() {
-    const historyContainer = document.getElementById("renderall-history");
-    historyContainer.innerHTML = '';
-
-    const history = JSON.parse(localStorage.getItem("renderall")) || [];
-    if (history.length === 0) {
-        historyContainer.innerHTML = "<i>No renderAll history found.</i>";
-        return;
-    }
-
-    // Group by time (HH:MM)
-    const grouped = {};
-    history.forEach(entry => {
-        const timeStr = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        // Keep the entry with the highest totalPlayers for that time
-        if (!grouped[timeStr] || entry.totalPlayers > grouped[timeStr].totalPlayers) {
-            grouped[timeStr] = entry;
-        }
-    });
-
-    // Sort keys (time strings) ascending
-    const sortedTimes = Object.keys(grouped).sort((a, b) => {
-        const [ha, ma] = a.split(':').map(Number);
-        const [hb, mb] = b.split(':').map(Number);
-        return ha !== hb ? ha - hb : ma - mb;
-    });
-
-    // Create one button per time
-    sortedTimes.forEach(timeStr => {
-        const entry = grouped[timeStr];
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.style.margin = '4px';
-        btn.style.padding = '6px 10px';
-        btn.style.borderRadius = '6px';
-        btn.style.cursor = 'pointer';
-        btn.style.background = '#4a4a8c';
-        btn.style.color = '#fff';
-        btn.style.border = 'none';
-        btn.style.fontSize = '14px';
-
-        btn.innerText = `${timeStr} - ${entry.totalPlayers} players`;
-
-        btn.onclick = () => {
-            document.getElementById('rank-list').innerHTML = entry.html;
-            console.log(`📂 Loaded snapshot for ${timeStr}`);
-        };
-
-        historyContainer.appendChild(btn);
-    });
-}
-
-
 
 
 ////5 JSONBIN functions
 
-
-// ------------------- Save to JSONBin with merge -------------------
-async function saveToJSONBin(ign=null) {
+// ------------------- Save to JSONBin -------------------
+// Save always as an array
+async function saveToJSONBin(){
   try {
-    console.log("🔄 Saving to JSONBin...", players);
-
-    // 1️⃣ Load current JSONBin content first
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const data = await res.json();
-    const existing = data.record.rankings || [];
-
-    // 2️⃣ Convert to object for easy merging by IGN
-    let merged = {};
-    existing.forEach(p => { if(p.ign) merged[p.ign] = p; });
-    Object.values(players).forEach(p => { if(p.ign) merged[p.ign] = p; });
-
-    // 3️⃣ Convert merged object back to array
-    const mergedArray = Object.values(merged);
-
-    // 4️⃣ Save back using PUT (JSONBin requires PUT)
+console.log("🔄 Saving to JSONBin...", players); // DEBUG
     await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json",
         "X-Master-Key": MASTER_KEY
       },
-      body: JSON.stringify({ rankings: mergedArray })
+      body: JSON.stringify({ rankings: Object.values(players) })
+ // save as array
     });
+  } catch(err){
+    console.error(err);
+    // ✅ Go back to the last 
 
-    console.log("✅ JSONBin saved successfully!");
-  } catch(err) {
-    console.error("❌ Error saving to JSONBin:", err);
+
+
+
   }
 }
 
-// ------------------- Load from JSONBin -------------------
-async function loadFromJSONBin() {
-  try {
+// Load and rebuild players object
+async function loadFromJSONBin(){
+  try{
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: {
-        "X-Master-Key": MASTER_KEY,
-        "Content-Type": "application/json"
-      }
+      headers:{ "X-Master-Key": MASTER_KEY }
     });
-
-    if (!res.ok) throw new Error("HTTP " + res.status);
-
     const data = await res.json();
-    players = data.record.rankings || [];   // adjust if your bin has different structure
+    const list = data.record.rankings || [];
 
-    // Process each player if needed
-    players.forEach(computePlayer);
-
-    // Render leaderboard
+    players = {};
+    list.forEach(p=>{
+      players[p.ign] = p;
+    });
+    Object.keys(players).forEach(computePlayer);
     renderAll();
-
-    // Hide loading overlay
-    document.getElementById("loading-overlay").style.display = "none";
-
-    console.log("✅ JSONBin loaded successfully!");
-  } catch (err) {
-    console.error("❌ Failed loading JSONBin:", err);
-
-    // show error message
-    const rankList = document.getElementById("rank-list");
-    if (rankList) {
-      rankList.innerHTML = `<div class="error">⚠️ Could not load rankings.</div>`;
-    }
-    document.getElementById("loading-overlay").style.display = "none";
+  } catch(err){
+    console.error("Failed loading JSONBin", err);
   }
 }
 
-
-
-
-
-///6/////
+///5/////
 
 
 
@@ -911,289 +804,60 @@ settingsIcon.addEventListener("click", () => {
 });
 
 // Delete all players
-// Delete all players (local + JSONBin)
-
-
-async function deleteAllPlayers() {
-  if (!confirm("⚠️ Are you sure you want to DELETE ALL players? This cannot be undone.")) {
-    return;
-  }
-
-  try {
-
-    // 2️⃣ Save empty array to JSONBin
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify({ rankings: [] })
-    });
-
-    // 3️⃣ Refresh UI
+function deleteAllPlayers(){
+  if(confirm("Are you sure you want to delete ALL players?")){
+    players = {};
+    localStorage.setItem("players", JSON.stringify(players));
+    saveToJSONBin();
     renderAll();
-    alert("✅ All players deleted successfully!");
-  } catch (err) {
-    console.error("❌ Error deleting all players:", err);
-    alert("❌ Failed to delete all players. Check console.");
+    alert("All players deleted.");
   }
 }
 
-
-// 🔹 Delete specific player by IGN & ID (remote only, never local)
-async function deletePlayer() {
+// Delete specific player by IGN & ID
+function deletePlayer(){
   const ign = document.getElementById("delete-ign").value.trim();
   const id = document.getElementById("delete-id").value.trim();
-
-  if (!ign || !id) { 
-    alert("Enter IGN & ID"); 
-    return; 
-  }
-
-  try {
-    // 1) Load current remote data
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-
-    if (!res.ok) throw new Error(`Failed to fetch JSONBin (status ${res.status})`);
-
-    const data = await res.json();
-    const existing = data.record || {};
-
-    // 2) Find the player in remote
-    const playerKey = Object.keys(existing).find(
-      key => existing[key].ign === ign && String(existing[key].id) === String(id)
-    );
-
-    if (!playerKey) {
-      alert("❌ Player not found online.");
-      return;
-    }
-
-    // 3) Remove the player from remote copy
-    delete existing[playerKey];
-
-    // 4) Try to PUT updated data
-    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Master-Key": MASTER_KEY
-      },
-      body: JSON.stringify(existing)
-    });
-
-    // 5) If PUT failed → restore old untouched data
-    if (!putRes.ok) {
-      console.error("❌ PUT failed:", await putRes.text());
-
-      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Master-Key": MASTER_KEY
-        },
-        body: JSON.stringify(data.record) // restore old safe copy
-      });
-
-      alert("❌ Error deleting online, refresh the page later");
-      return;
-    }
-
-    // ✅ Success
-    console.log(`✅ Player ${ign} removed from JSONBin`);
-    renderAll();
-    alert(`✅ Player ${ign} deleted online.`);
-
-  } catch (err) {
-    console.error("❌ Error deleting player:", err);
-    alert("❌ Error deleting online, refresh the page later");
-  }
-}
-
-
-
-document.getElementById('reset-renderall').addEventListener('click', () => {
-    if(confirm("Are you sure you want to clear all renderAll history?")) {
-        localStorage.removeItem("renderall");
-        document.getElementById("renderall-history").innerHTML = "<i>No renderAll history found.</i>";
-        console.log("🗑️ renderAll history cleared.");
-    }
-});
-
-
-// 🔹 Add Player (safe merge, error rollback)
-async function addPlayer() {
-  const ign = document.getElementById("add-ign").value.trim();
-  const id = document.getElementById("add-id").value.trim();
-
-  // 9 fields for 3 stages × 3 games
-  const stageInputs = [];
-  for (let s = 1; s <= 3; s++) {
-    for (let g = 1; g <= 3; g++) {
-      const val = document.getElementById(`add-s${s}g${g}`).value.trim();
-      stageInputs.push({ s, g, val });
-    }
-  }
-
-  if (!ign || !id) {
-    alert("IGN & ID required!");
-    return;
-  }
-
-  try {
-    // 1) Fetch current JSONBin
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-    const data = await res.json();
-    const existing = data.record || {};
-
-    // 2) Merge new player with old set
-    const updated = { ...existing };
-    updated[ign] = updated[ign] || { ign, id, stages: {}, final: {} };
-
-    // 3) Update only filled fields
-    stageInputs.forEach(({ s, g, val }) => {
-      if (val === "") return; // keep old value
-      const num = val.toLowerCase() === "null" ? null : Number(val);
-      updated[ign].stages[s] = updated[ign].stages[s] || { raw: {} };
-      updated[ign].stages[s].raw["g" + g] = num;
-    });
-
-    // 4) PUT merged data
-    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: { 
-        "X-Master-Key": MASTER_KEY,
-        "Content-Type": "application/json" 
-      },
-      body: JSON.stringify(updated)
-    });
-
-    if (!putRes.ok) {
-      // rollback
-      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-        method: "PUT",
-        headers: {
-          "X-Master-Key": MASTER_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(existing)
-      });
-      alert("❌ Error saving online, refresh the page later");
-      return;
-    }
-
-    // 5) Update local & UI
-    players = updated;
+  if(!ign || !id){ alert("Enter IGN and ID."); return; }
+  if(players[ign] && players[ign].id === id){
+    delete players[ign];
     localStorage.setItem("players", JSON.stringify(players));
-    computePlayer(ign);
+    saveToJSONBin();
     renderAll();
-    alert("✅ Player added/updated.");
-
-  } catch (err) {
-    console.error("Add failed:", err);
-    alert("❌ Error saving online, refresh the page later");
-  }
+    alert(`Player ${ign} deleted.`);
+  } else alert("Player not found or ID mismatch.");
 }
 
-
-
-// 🔹 Edit Player (safe merge, error rollback)
-async function editPlayer() {
+// Edit player
+function editPlayer(){
   const ign = document.getElementById("edit-ign").value.trim();
-  const id = document.getElementById("edit-id").value.trim();
+  const field = document.getElementById("edit-field").value.trim();
+  const value = document.getElementById("edit-value").value.trim();
+  if(!ign || !field || !value){ alert("Enter all fields."); return; }
 
-  // 9 fields for 3 stages × 3 games
-  const stageInputs = [];
-  for (let s = 1; s <= 3; s++) {
-    for (let g = 1; g <= 3; g++) {
-      const val = document.getElementById(`edit-s${s}g${g}`).value.trim();
-      stageInputs.push({ s, g, val });
+  if(players[ign]){
+    try{
+      if(field === "stages" || field === "final"){
+        players[ign][field] = JSON.parse(value); // accept JSON format for complex objects
+      } else {
+        players[ign][field] = value; // string for simple fields
+      }
+      computePlayer(ign);
+      localStorage.setItem("players", JSON.stringify(players));
+      saveToJSONBin();
+      renderAll();
+      alert(`Player ${ign} updated.`);
+    } catch(e){
+      alert("Invalid value format. For stages/final, enter valid JSON.");
     }
-  }
-
-  if (!ign || !id) {
-    alert("IGN & ID required!");
-    return;
-  }
-
-  try {
-    // 1) Fetch current JSONBin
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-    const data = await res.json();
-    const existing = data.record || {};
-
-    if (!existing[ign] || String(existing[ign].id) !== id) {
-      alert("❌ Player not found online.");
-      return;
-    }
-
-    // 2) Copy old player
-    const updated = { ...existing };
-
-    // 3) Update only filled fields
-    stageInputs.forEach(({ s, g, val }) => {
-      if (val === "") return; // leave unchanged
-      const num = val.toLowerCase() === "null" ? null : Number(val);
-      updated[ign].stages[s] = updated[ign].stages[s] || { raw: {} };
-      updated[ign].stages[s].raw["g" + g] = num;
-    });
-
-    // 4) PUT merged data
-    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: "PUT",
-      headers: { 
-        "X-Master-Key": MASTER_KEY,
-        "Content-Type": "application/json" 
-      },
-      body: JSON.stringify(updated)
-    });
-
-    if (!putRes.ok) {
-      // rollback
-      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-        method: "PUT",
-        headers: {
-          "X-Master-Key": MASTER_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(existing)
-      });
-      alert("❌ Error saving online, refresh the page later");
-      return;
-    }
-
-    // 5) Update local & UI
-    players = updated;
-    localStorage.setItem("players", JSON.stringify(players));
-    computePlayer(ign);
-    renderAll();
-    alert("✏️ Player updated.");
-
-  } catch (err) {
-    console.error("Edit failed:", err);
-    alert("❌ Error saving online, refresh the page later");
-  }
+  } else alert("Player not found.");
 }
-
-
-// ------------------- Auto-refresh leaderboard -------------------
 
 
 
 
 
 // 6------------------- On page load -------------------
-
-
 // Ensure loading overlay disappears after 10 seconds
 setTimeout(() => {
     const overlay = document.getElementById("loading-overlay");
@@ -1202,20 +866,20 @@ setTimeout(() => {
 
 
 window.addEventListener('DOMContentLoaded', async ()=>{
-  // 🔥 Always load fresh data first
-  
-  await loadFromJSONBin();
-  renderAll();
-
-
-  }
-
-  
-// Also refresh when returning to the tab
-document.addEventListener("visibilitychange", async () => {
-  if (!document.hidden) {
+  const stageResult = JSON.parse(localStorage.getItem("latestStageResult"));
+  if(stageResult){
+    addSubmission(
+      stageResult.ign, 
+      stageResult.stageNumber, 
+      stageResult.g1, 
+      stageResult.g2, 
+      stageResult.g3, 
+      stageResult.id
+    );
+    localStorage.removeItem("latestStageResult");
+  } else {
     await loadFromJSONBin();
-    renderLeaderboardOnly();
+    renderAll();
   }
 });
 
